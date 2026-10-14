@@ -22,6 +22,37 @@ export function annotationRotation(annotation: Annotation): number {
   return annotation.rotation ?? 0
 }
 
+/** Top edge center in local (unrotated) space — stem attaches here. */
+export function getRotateHandleAnchor(annotation: Annotation): Point | null {
+  switch (annotation.type) {
+    case 'rectangle':
+      return {
+        x: annotation.x + annotation.width / 2,
+        y: annotation.y,
+      }
+    case 'line': {
+      const minX = Math.min(annotation.start.x, annotation.end.x)
+      const maxX = Math.max(annotation.start.x, annotation.end.x)
+      const minY = Math.min(annotation.start.y, annotation.end.y)
+      return { x: (minX + maxX) / 2, y: minY }
+    }
+    case 'text': {
+      const block = textBlockSize(annotation.text, annotation.fontSize)
+      return { x: annotation.x + block.width / 2, y: annotation.y }
+    }
+    case 'circle':
+      return null
+    default: {
+      const unreachable: never = annotation
+      return unreachable
+    }
+  }
+}
+
+export function getRotateHandlePoint(anchor: Point): Point {
+  return { x: anchor.x, y: anchor.y - ROTATE_HANDLE_OFFSET }
+}
+
 export function getAnnotationPivot(annotation: Annotation): Point {
   switch (annotation.type) {
     case 'rectangle':
@@ -48,6 +79,169 @@ export function getAnnotationPivot(annotation: Annotation): Point {
       return unreachable
     }
   }
+}
+
+type PageBounds = {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+}
+
+export function rotatePointAroundPivot(
+  point: Point,
+  pivot: Point,
+  degreesCw: number,
+): Point {
+  if (degreesCw === 0) {
+    return point
+  }
+  const rad = (degreesCw * Math.PI) / 180
+  const cos = Math.cos(rad)
+  const sin = Math.sin(rad)
+  const dx = point.x - pivot.x
+  const dy = point.y - pivot.y
+  return {
+    x: pivot.x + dx * cos - dy * sin,
+    y: pivot.y + dx * sin + dy * cos,
+  }
+}
+
+function boundsFromPoints(points: readonly Point[]): PageBounds {
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const point of points) {
+    minX = Math.min(minX, point.x)
+    minY = Math.min(minY, point.y)
+    maxX = Math.max(maxX, point.x)
+    maxY = Math.max(maxY, point.y)
+  }
+  return { minX, minY, maxX, maxY }
+}
+
+export function getAnnotationPageBounds(annotation: Annotation): PageBounds {
+  switch (annotation.type) {
+    case 'circle':
+      return {
+        minX: annotation.cx - annotation.radius,
+        minY: annotation.cy - annotation.radius,
+        maxX: annotation.cx + annotation.radius,
+        maxY: annotation.cy + annotation.radius,
+      }
+    case 'line':
+      return boundsFromPoints([annotation.start, annotation.end])
+    case 'rectangle': {
+      const pivot = getAnnotationPivot(annotation)
+      const rotation = annotationRotation(annotation)
+      const corners: Point[] = [
+        { x: annotation.x, y: annotation.y },
+        { x: annotation.x + annotation.width, y: annotation.y },
+        { x: annotation.x, y: annotation.y + annotation.height },
+        {
+          x: annotation.x + annotation.width,
+          y: annotation.y + annotation.height,
+        },
+      ].map((corner) => rotatePointAroundPivot(corner, pivot, rotation))
+      return boundsFromPoints(corners)
+    }
+    case 'text': {
+      const block = textBlockSize(annotation.text, annotation.fontSize)
+      const pivot = getAnnotationPivot(annotation)
+      const rotation = annotationRotation(annotation)
+      const corners: Point[] = [
+        { x: annotation.x, y: annotation.y },
+        { x: annotation.x + block.width, y: annotation.y },
+        { x: annotation.x, y: annotation.y + block.height },
+        {
+          x: annotation.x + block.width,
+          y: annotation.y + block.height,
+        },
+      ].map((corner) => rotatePointAroundPivot(corner, pivot, rotation))
+      return boundsFromPoints(corners)
+    }
+    default: {
+      const unreachable: never = annotation
+      return unreachable
+    }
+  }
+}
+
+export function translateAnnotationByDelta(
+  annotation: Annotation,
+  dx: number,
+  dy: number,
+): Annotation {
+  switch (annotation.type) {
+    case 'rectangle':
+      return {
+        ...annotation,
+        x: annotation.x + dx,
+        y: annotation.y + dy,
+      }
+    case 'circle':
+      return {
+        ...annotation,
+        cx: annotation.cx + dx,
+        cy: annotation.cy + dy,
+      }
+    case 'line':
+      return {
+        ...annotation,
+        start: {
+          x: annotation.start.x + dx,
+          y: annotation.start.y + dy,
+        },
+        end: {
+          x: annotation.end.x + dx,
+          y: annotation.end.y + dy,
+        },
+      }
+    case 'text':
+      return {
+        ...annotation,
+        x: annotation.x + dx,
+        y: annotation.y + dy,
+      }
+    default: {
+      const unreachable: never = annotation
+      return unreachable
+    }
+  }
+}
+
+export function clampAnnotationToPage(
+  annotation: Annotation,
+  page: PdfPageDimensions,
+): Annotation {
+  const bounds = getAnnotationPageBounds(annotation)
+  let shiftX = 0
+  let shiftY = 0
+  if (bounds.minX < 0) {
+    shiftX = -bounds.minX
+  } else if (bounds.maxX > page.width) {
+    shiftX = page.width - bounds.maxX
+  }
+  if (bounds.minY < 0) {
+    shiftY = -bounds.minY
+  } else if (bounds.maxY > page.height) {
+    shiftY = page.height - bounds.maxY
+  }
+  if (shiftX === 0 && shiftY === 0) {
+    return annotation
+  }
+  return translateAnnotationByDelta(annotation, shiftX, shiftY)
+}
+
+export function translateAnnotation(
+  annotation: Annotation,
+  dx: number,
+  dy: number,
+  page: PdfPageDimensions,
+): Annotation {
+  const moved = translateAnnotationByDelta(annotation, dx, dy)
+  return clampAnnotationToPage(moved, page)
 }
 
 export function inverseRotatePoint(
@@ -82,20 +276,26 @@ export function resizeAnnotation(
   const pivot = getAnnotationPivot(annotation)
   const local = inverseRotatePoint(pointer, pivot, annotationRotation(annotation))
 
+  let next: Annotation
   switch (annotation.type) {
     case 'rectangle':
-      return resizeRectangle(annotation, handle, local, page)
+      next = resizeRectangle(annotation, handle, local, page)
+      break
     case 'circle':
-      return resizeCircle(annotation, handle, local, page)
+      next = resizeCircle(annotation, handle, local, page)
+      break
     case 'line':
-      return resizeLine(annotation, handle, local, page)
+      next = resizeLine(annotation, handle, local, page)
+      break
     case 'text':
-      return resizeText(annotation, handle, local, page)
+      next = resizeText(annotation, handle, local, page)
+      break
     default: {
       const unreachable: never = annotation
       return unreachable
     }
   }
+  return clampAnnotationToPage(next, page)
 }
 
 function resizeRectangle(
@@ -209,15 +409,53 @@ function resizeText(
   }
 }
 
+function fitsOnPage(annotation: Annotation, page: PdfPageDimensions): boolean {
+  const bounds = getAnnotationPageBounds(annotation)
+  return (
+    bounds.minX >= 0 &&
+    bounds.minY >= 0 &&
+    bounds.maxX <= page.width &&
+    bounds.maxY <= page.height
+  )
+}
+
+/**
+ * When rotation would push corners off the page, nudge position inward.
+ * If the rotated AABB is larger than the page, ease rotation back toward
+ * the last angle that still fits.
+ */
 export function rotateAnnotation(
   annotation: Annotation,
   pointer: Point,
   startPointer: Point,
   startRotation: number,
+  page: PdfPageDimensions,
 ): Annotation {
   const pivot = getAnnotationPivot(annotation)
   const startAngle = angleBetweenPoints(pivot, startPointer)
   const currentAngle = angleBetweenPoints(pivot, pointer)
-  const rotation = startRotation + (currentAngle - startAngle)
-  return { ...annotation, rotation }
+  const targetRotation = startRotation + (currentAngle - startAngle)
+
+  let rotation = targetRotation
+  let candidate = clampAnnotationToPage(
+    { ...annotation, rotation },
+    page,
+  )
+  if (fitsOnPage(candidate, page)) {
+    return candidate
+  }
+
+  const towardStart = targetRotation > startRotation ? -1 : 1
+  while (Math.abs(rotation - startRotation) > 0.5) {
+    rotation += towardStart
+    candidate = clampAnnotationToPage({ ...annotation, rotation }, page)
+    if (fitsOnPage(candidate, page)) {
+      return candidate
+    }
+  }
+
+  return clampAnnotationToPage(
+    { ...annotation, rotation: startRotation },
+    page,
+  )
 }

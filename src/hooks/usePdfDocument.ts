@@ -56,7 +56,7 @@ export function usePdfDocument() {
     canvasRenderSnapshotRef.current = { canvas, page, requestId }
   }
 
-  const renderPage = async (
+  const renderPage = useCallback(async (
     canvas: HTMLCanvasElement,
     page: PDFPageProxy,
     requestId: number,
@@ -106,7 +106,7 @@ export function usePdfDocument() {
       console.error('Failed to render PDF page', renderError)
       return { ok: false, message: 'The PDF page could not be drawn.' }
     }
-  }
+  }, [])
 
   const showPage = useCallback(
     async (
@@ -139,7 +139,7 @@ export function usePdfDocument() {
       }
       return { ok: true }
     },
-    [],
+    [renderPage],
   )
 
   const handleCanvasRef = useCallback((node: HTMLCanvasElement | null) => {
@@ -157,7 +157,7 @@ export function usePdfDocument() {
         setError(result.message)
       }
     })
-  }, [])
+  }, [renderPage])
 
   const loadFile = async (file: File): Promise<PdfLoadResult> => {
     const requestId = requestRef.current + 1

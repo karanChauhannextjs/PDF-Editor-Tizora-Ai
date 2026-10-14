@@ -64,6 +64,17 @@ export function AnnotationStyleBar({
       !isComposingText &&
       selected?.type !== 'text')
 
+  const canEditShapeStyle =
+    tool === 'rectangle' ||
+    tool === 'circle' ||
+    tool === 'line' ||
+    (selected !== null && isShapeAnnotation(selected))
+
+  const canEditTextStyle =
+    tool === 'text' ||
+    isComposingText ||
+    selected?.type === 'text'
+
   const shapeStroke =
     selected && isShapeAnnotation(selected) ? selected.stroke : drawStroke
   const shapeStrokeWidth =
@@ -111,6 +122,12 @@ export function AnnotationStyleBar({
       {showShapeControls ? (
         <ColorPickerField
           label="Shape color"
+          disabled={!canEditShapeStyle}
+          instanceKey={
+            selected && isShapeAnnotation(selected)
+              ? `shape-${selected.id}`
+              : 'shape-draw'
+          }
           value={shapeStroke}
           onChange={setShapeStroke}
           onPickerActiveChange={onShapeColorPickerActiveChange}
@@ -119,6 +136,7 @@ export function AnnotationStyleBar({
 
       {showShapeControls ? (
         <StrokeWidthSelect
+          disabled={!canEditShapeStyle}
           value={shapeStrokeWidth}
           onChange={setShapeStrokeWidth}
         />
@@ -132,15 +150,23 @@ export function AnnotationStyleBar({
         <>
           <ColorPickerField
             label="Text color"
+            disabled={!canEditTextStyle}
+            instanceKey={
+              selected?.type === 'text'
+                ? `text-${selected.id}`
+                : 'text-compose'
+            }
             value={activeText.color}
             onChange={(color) => patchTextFormat({ color })}
           />
           <FontSizeSelect
+            disabled={!canEditTextStyle}
             value={activeText.fontSize}
             onChange={(fontSize) => patchTextFormat({ fontSize })}
           />
           <ToggleFormat
             label="Bold"
+            disabled={!canEditTextStyle}
             pressed={activeText.bold}
             onClick={() => patchTextFormat({ bold: !activeText.bold })}
           >
@@ -148,6 +174,7 @@ export function AnnotationStyleBar({
           </ToggleFormat>
           <ToggleFormat
             label="Italic"
+            disabled={!canEditTextStyle}
             pressed={activeText.italic}
             onClick={() => patchTextFormat({ italic: !activeText.italic })}
           >
@@ -155,6 +182,7 @@ export function AnnotationStyleBar({
           </ToggleFormat>
           <ToggleFormat
             label="Underline"
+            disabled={!canEditTextStyle}
             pressed={activeText.underline}
             onClick={() =>
               patchTextFormat({ underline: !activeText.underline })
@@ -170,23 +198,48 @@ export function AnnotationStyleBar({
 
 function ColorPickerField({
   label,
+  instanceKey,
   value,
   onChange,
+  disabled = false,
   onPickerActiveChange,
 }: {
   label: string
+  instanceKey: string
   value: string
   onChange: (color: string) => void
+  disabled?: boolean
   onPickerActiveChange?: (active: boolean) => void
 }) {
   const safeValue = normalizeHexColor(value) ?? DEFAULT_STROKE
+  return (
+    <ColorPickerFieldInner
+      key={instanceKey}
+      label={label}
+      safeValue={safeValue}
+      disabled={disabled}
+      onChange={onChange}
+      onPickerActiveChange={onPickerActiveChange}
+    />
+  )
+}
+
+function ColorPickerFieldInner({
+  label,
+  safeValue,
+  onChange,
+  disabled = false,
+  onPickerActiveChange,
+}: {
+  label: string
+  safeValue: string
+  onChange: (color: string) => void
+  disabled?: boolean
+  onPickerActiveChange?: (active: boolean) => void
+}) {
   const [hexInput, setHexInput] = useState(safeValue)
   const fieldRef = useRef<HTMLDivElement>(null)
   const blurTimerRef = useRef<number | null>(null)
-
-  useEffect(() => {
-    setHexInput(safeValue)
-  }, [safeValue])
 
   useEffect(() => {
     return () => {
@@ -200,10 +253,15 @@ function ColorPickerField({
     onPickerActiveChange?.(active)
   }
 
-  const schedulePickerInactive = () => {
+  const cancelPickerInactive = () => {
     if (blurTimerRef.current !== null) {
       window.clearTimeout(blurTimerRef.current)
+      blurTimerRef.current = null
     }
+  }
+
+  const schedulePickerInactive = () => {
+    cancelPickerInactive()
     blurTimerRef.current = window.setTimeout(() => {
       blurTimerRef.current = null
       if (fieldRef.current?.contains(document.activeElement)) {
@@ -212,6 +270,17 @@ function ColorPickerField({
       setPickerActive(false)
     }, 200)
   }
+
+  useEffect(() => {
+    if (!disabled) {
+      return
+    }
+    if (blurTimerRef.current !== null) {
+      window.clearTimeout(blurTimerRef.current)
+      blurTimerRef.current = null
+    }
+    onPickerActiveChange?.(false)
+  }, [disabled, onPickerActiveChange])
 
   const commitHex = () => {
     const normalized = normalizeHexColor(hexInput)
@@ -226,24 +295,60 @@ function ColorPickerField({
   return (
     <div
       ref={fieldRef}
-      className="flex flex-wrap items-center gap-2"
-      onFocusCapture={() => setPickerActive(true)}
-      onBlurCapture={() => schedulePickerInactive()}
+      className={cn(
+        'flex flex-wrap items-center gap-2',
+        disabled && 'pointer-events-none opacity-50',
+      )}
+      onFocusCapture={() => {
+        if (disabled) {
+          return
+        }
+        cancelPickerInactive()
+        setPickerActive(true)
+      }}
+      onBlurCapture={(event) => {
+        if (disabled) {
+          return
+        }
+        const next = event.relatedTarget as Node | null
+        if (next && fieldRef.current?.contains(next)) {
+          return
+        }
+        if (
+          event.target instanceof HTMLInputElement &&
+          event.target.type === 'color' &&
+          next === null
+        ) {
+          return
+        }
+        schedulePickerInactive()
+      }}
     >
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <input
         type="color"
-        className="h-9 w-11 cursor-pointer rounded-md border bg-background p-0.5"
+        disabled={disabled}
+        className="h-9 w-11 cursor-pointer rounded-md border bg-background p-0.5 disabled:cursor-not-allowed"
         value={safeValue}
-        onPointerDown={() => setPickerActive(true)}
+        onPointerDown={() => {
+          cancelPickerInactive()
+          setPickerActive(true)
+        }}
+        onFocus={() => {
+          cancelPickerInactive()
+          setPickerActive(true)
+        }}
         onChange={(event) => {
+          cancelPickerInactive()
           setPickerActive(true)
           onChange(event.target.value)
           setHexInput(event.target.value)
         }}
+        onBlur={() => schedulePickerInactive()}
         aria-label={`${label} picker`}
       />
       <Input
+        disabled={disabled}
         className="h-8 w-[6.5rem] font-mono text-xs"
         value={hexInput}
         onChange={(event) => {
@@ -267,9 +372,11 @@ function ColorPickerField({
 function StrokeWidthSelect({
   value,
   onChange,
+  disabled = false,
 }: {
   value: number
   onChange: (strokeWidth: number) => void
+  disabled?: boolean
 }) {
   const widths: number[] = [...STROKE_WIDTH_OPTIONS]
   if (!widths.includes(value)) {
@@ -287,6 +394,7 @@ function StrokeWidthSelect({
       </span>
       <Select
         value={value}
+        disabled={disabled}
         onValueChange={(next) => {
           if (next !== null) {
             onChange(Number(next))
@@ -296,6 +404,7 @@ function StrokeWidthSelect({
         <SelectTrigger
           id="stroke-width-select"
           size="sm"
+          disabled={disabled}
           className="min-w-[5.25rem] bg-background font-medium shadow-xs hover:bg-muted/60"
           aria-labelledby="stroke-width-label"
         >
@@ -316,9 +425,11 @@ function StrokeWidthSelect({
 function FontSizeSelect({
   value,
   onChange,
+  disabled = false,
 }: {
   value: number
   onChange: (fontSize: number) => void
+  disabled?: boolean
 }) {
   const sizes: number[] = [...FONT_SIZE_OPTIONS]
   if (!sizes.includes(value)) {
@@ -336,6 +447,7 @@ function FontSizeSelect({
       </span>
       <Select
         value={value}
+        disabled={disabled}
         onValueChange={(next) => {
           if (next !== null) {
             onChange(Number(next))
@@ -345,6 +457,7 @@ function FontSizeSelect({
         <SelectTrigger
           id="font-size-select"
           size="sm"
+          disabled={disabled}
           className="min-w-[5.75rem] bg-background font-medium shadow-xs hover:bg-muted/60"
           aria-labelledby="font-size-label"
         >
@@ -366,17 +479,20 @@ function ToggleFormat({
   label,
   pressed,
   onClick,
+  disabled = false,
   children,
 }: {
   label: string
   pressed: boolean
   onClick: () => void
+  disabled?: boolean
   children: ReactNode
 }) {
   return (
     <Button
       type="button"
       size="icon-sm"
+      disabled={disabled}
       variant={pressed ? 'default' : 'outline'}
       className={cn(
         'size-9 rounded-xl [&_svg]:text-current',

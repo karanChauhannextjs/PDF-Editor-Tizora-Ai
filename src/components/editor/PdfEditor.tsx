@@ -96,6 +96,7 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
   const [shapeColorPickerActive, setShapeColorPickerActive] = useState(false)
 
   const page = pdf.page ?? blankPage
+  const activeTool: AnnotationTool | null = page ? (tool ?? 'select') : null
   const selected =
     annotations.find((annotation) => annotation.id === selectedId) ?? null
   const banner = appError ?? pdf.error
@@ -105,18 +106,6 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
       setPageDimensions(pdf.currentPageIndex, pdf.page)
     }
   }, [pdf.page, pdf.currentPageIndex, setPageDimensions])
-
-  useEffect(() => {
-    if (!pdf.page) {
-      setTool(null)
-      return
-    }
-    setTool((current) => (current === null ? 'select' : current))
-  }, [pdf.page])
-
-  useEffect(() => {
-    setTextDraft(null)
-  }, [pdf.currentPageIndex])
 
   const deleteAnnotation = useCallback(
     (id: string) => {
@@ -425,8 +414,8 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
         <div className="flex shrink-0 flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <AnnotationToolbar
-              tool={tool}
-              canDraw={pdf.page !== null}
+              tool={activeTool}
+              canDraw={page !== null}
               canDelete={selectedId !== null}
               onToolChange={handleToolChange}
               onDelete={handleDelete}
@@ -434,13 +423,13 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
             <p className="text-sm text-muted-foreground">
               Active tool:{' '}
               <span className="font-medium text-foreground">
-                {tool === null ? 'None' : toolLabel(tool)}
+                {activeTool === null ? 'None' : toolLabel(activeTool)}
               </span>
             </p>
           </div>
 
           <AnnotationStyleBar
-            tool={tool}
+            tool={activeTool}
             selected={selected}
             isComposingText={textDraft !== null}
             drawStroke={drawStroke}
@@ -534,6 +523,7 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
                   pageCount={pdf.pageCount}
                   disabled={pdf.phase === 'loading'}
                   onPageChange={(nextPage) => {
+                    setTextDraft(null)
                     void pdf.goToPage(nextPage).then((result) => {
                       if (!result.ok) {
                         setAppError(result.message)
@@ -551,7 +541,7 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
                 >
                   <AnnotationLayer
                     page={page}
-                    tool={tool}
+                    tool={activeTool}
                     drawStroke={drawStroke}
                     drawStrokeWidth={drawStrokeWidth}
                     annotations={annotations}

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { PdfEditor } from '@/components/editor/PdfEditor'
@@ -44,7 +44,9 @@ describe('PdfEditor', () => {
     await user.type(field, 'Hello note')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
-    expect(screen.getByText('Hello note')).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('annotation-svg')).getByText('Hello note'),
+    ).toBeInTheDocument()
   })
 
   it('does not delete an annotation while text is being edited', async () => {
@@ -65,12 +67,15 @@ describe('PdfEditor', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
     await user.click(screen.getByRole('button', { name: 'Select' }))
-    fireEvent.pointerDown(screen.getByText('Hello note'), {
-      button: 0,
-      pointerId: 1,
-      clientX: 40,
-      clientY: 50,
-    })
+    fireEvent.pointerDown(
+      within(screen.getByTestId('annotation-svg')).getByText('Hello note'),
+      {
+        button: 0,
+        pointerId: 1,
+        clientX: 40,
+        clientY: 50,
+      },
+    )
     await user.click(screen.getByRole('button', { name: 'Edit text' }))
 
     const field = screen.getByLabelText('Annotation text')
@@ -78,14 +83,16 @@ describe('PdfEditor', () => {
     expect(screen.getByLabelText('Annotation text')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(screen.getByText('Hello note')).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('annotation-svg')).getByText('Hello note'),
+    ).toBeInTheDocument()
   })
 
   it('shows a friendly error when the chosen file is not a PDF', async () => {
     const user = userEvent.setup()
     render(<PdfEditor />)
 
-    const input = screen.getByLabelText('Open PDF')
+    const input = screen.getAllByLabelText('Open PDF')[0]
     const file = new File(['hello'], 'notes.pdf', { type: 'application/pdf' })
     await user.upload(input, file)
 

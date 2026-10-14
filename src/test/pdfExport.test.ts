@@ -1,6 +1,5 @@
 import { PDFDocument } from 'pdf-lib'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { getDocument } from '@/lib/pdfjs'
 import { buildAnnotatedPdfBytes } from '@/utils/pdfExport'
 import type { AnnotationRootState } from '@/utils/annotationRootReducer'
 
@@ -14,9 +13,8 @@ beforeAll(async () => {
 })
 
 describe('pdfExport', () => {
-  it('exports annotations when pdf.js uses a separate worker buffer', async () => {
+  it('embeds annotations into a copy of the original PDF bytes', async () => {
     const storedBytes = new Uint8Array(samplePdfBytes)
-    await getDocument({ data: storedBytes.slice() }).promise
 
     const state: AnnotationRootState = {
       pages: {

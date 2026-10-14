@@ -111,7 +111,8 @@ export function annotationRootReducer(
 function stripPageIndex(
   action: PageAction & { pageIndex: number },
 ): PageAction {
-  const { pageIndex: _, ...pageAction } = action
+  const { pageIndex, ...pageAction } = action
+  void pageIndex
   return pageAction as PageAction
 }
 

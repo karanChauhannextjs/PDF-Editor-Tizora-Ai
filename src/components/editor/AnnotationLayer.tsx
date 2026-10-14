@@ -10,6 +10,7 @@ import {
 } from '@/utils/annotationGeometry'
 import {
   type ResizeHandle,
+  clampAnnotationToPage,
   resizeAnnotation,
   rotateAnnotation,
 } from '@/utils/annotationTransform'
@@ -141,7 +142,7 @@ export function AnnotationLayer({
   }
 
   const handleHandlePointerDown = (
-    event: PointerEvent<SVGCircleElement>,
+    event: PointerEvent<SVGCircleElement | SVGGElement>,
     handle: ResizeHandle | 'rotate',
   ) => {
     if (tool !== 'select' || !selected) {
@@ -215,6 +216,7 @@ export function AnnotationLayer({
       point,
       drag.startPointer,
       drag.startRotation,
+      page,
     )
     dispatch({
       type: 'updateAnnotation',
@@ -253,7 +255,10 @@ export function AnnotationLayer({
     }
     dispatch({
       type: 'add',
-      annotation: annotationFromDraft(draft, drawStroke, drawStrokeWidth),
+      annotation: clampAnnotationToPage(
+        annotationFromDraft(draft, drawStroke, drawStrokeWidth),
+        page,
+      ),
     })
   }
 

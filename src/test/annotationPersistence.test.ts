@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { SAMPLE_ANNOTATION_DOCUMENT } from '@/data/sampleAnnotationDocument'
 import {
   ANNOTATION_DOCUMENT_VERSION,
@@ -88,6 +88,7 @@ describe('annotation persistence', () => {
   })
 
   it('rejects malformed JSON and unsupported annotation types', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const malformed = parseAnnotationDocument('{')
     expect(malformed).toEqual({
       ok: false,
@@ -111,5 +112,7 @@ describe('annotation persistence', () => {
       ok: false,
       message: 'The annotation file contains an unsupported annotation type.',
     })
+    expect(errorSpy).toHaveBeenCalledOnce()
+    errorSpy.mockRestore()
   })
 })
