@@ -119,18 +119,10 @@ function stripPageIndex(
 export function cloneAnnotationRootState(
   state: AnnotationRootState,
 ): AnnotationRootState {
-  return {
-    pageDimensions: { ...state.pageDimensions },
-    pages: Object.fromEntries(
-      Object.entries(state.pages).map(([pageIndex, slice]) => [
-        Number(pageIndex),
-        {
-          annotations: slice.annotations.map((annotation) => ({ ...annotation })),
-          selectedId: slice.selectedId,
-        },
-      ]),
-    ),
+  if (typeof structuredClone === 'function') {
+    return structuredClone(state)
   }
+  return JSON.parse(JSON.stringify(state)) as AnnotationRootState
 }
 
 export function rootStatesEqual(

@@ -88,6 +88,37 @@ describe('PdfEditor', () => {
     ).toBeInTheDocument()
   })
 
+  it('undoes the last annotation change from the toolbar', async () => {
+    const user = userEvent.setup()
+    renderEditor()
+
+    await user.click(screen.getByRole('button', { name: 'Text' }))
+    fireEvent.pointerDown(screen.getByTestId('annotation-svg'), {
+      button: 0,
+      pointerId: 1,
+      clientX: 40,
+      clientY: 50,
+    })
+    await user.type(
+      await screen.findByLabelText('Annotation text'),
+      'Undo me',
+    )
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(
+      within(screen.getByTestId('annotation-svg')).getByText('Undo me'),
+    ).toBeInTheDocument()
+
+    const undoButton = screen.getByRole('button', { name: 'Undo' })
+    expect(undoButton).toBeEnabled()
+    await user.click(undoButton)
+
+    expect(
+      within(screen.getByTestId('annotation-svg')).queryByText('Undo me'),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Redo' })).toBeEnabled()
+  })
+
   it('shows a friendly error when the chosen file is not a PDF', async () => {
     const user = userEvent.setup()
     render(<PdfEditor />)

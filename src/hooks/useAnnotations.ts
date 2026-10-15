@@ -1,13 +1,13 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useRef } from 'react'
 import type { Annotation } from '@/types/annotation'
 import type { PdfPageDimensions } from '@/types/pdf'
+import { useEditorSessionStore } from '@/stores/editorSessionStore'
 import type { AnnotationAction as PageAction } from '@/utils/annotationReducer'
 import {
   annotationRootReducer,
   cloneAnnotationRootState,
   countAnnotations,
   getPageSlice,
-  initialAnnotationRootState,
   rootStatesEqual,
   type AnnotationRootAction,
   type AnnotationRootState,
@@ -15,24 +15,18 @@ import {
 
 const HISTORY_LIMIT = 80
 
-type HistoryState = {
-  past: AnnotationRootState[]
-  present: AnnotationRootState
-  future: AnnotationRootState[]
-}
-
-const initialHistory: HistoryState = {
-  past: [],
-  present: initialAnnotationRootState,
-  future: [],
-}
-
 function recordsHistory(action: AnnotationRootAction): boolean {
   return action.type !== 'select' && action.type !== 'setPageDimensions'
 }
 
 export function useAnnotations(currentPageIndex: number) {
-  const [history, setHistory] = useState<HistoryState>(initialHistory)
+  const history = useEditorSessionStore((state) => state.annotationHistory)
+  const setAnnotationHistory = useEditorSessionStore(
+    (state) => state.setAnnotationHistory,
+  )
+  const resetAnnotationsInStore = useEditorSessionStore(
+    (state) => state.resetAnnotations,
+  )
   const transactionStartRef = useRef<AnnotationRootState | null>(null)
 
   const present = history.present
@@ -42,7 +36,7 @@ export function useAnnotations(currentPageIndex: number) {
 
   const applyAction = useCallback(
     (action: AnnotationRootAction, options?: { skipHistory?: boolean }) => {
-      setHistory((current) => {
+      setAnnotationHistory((current) => {
         const nextPresent = annotationRootReducer(current.present, action)
         if (rootStatesEqual(nextPresent, current.present)) {
           return current
@@ -62,7 +56,7 @@ export function useAnnotations(currentPageIndex: number) {
         }
       })
     },
-    [],
+    [setAnnotationHistory],
   )
 
   const dispatch = useCallback(
@@ -84,7 +78,7 @@ export function useAnnotations(currentPageIndex: number) {
     if (!snapshot) {
       return
     }
-    setHistory((current) => {
+    setAnnotationHistory((current) => {
       if (rootStatesEqual(snapshot, current.present)) {
         return current
       }
@@ -94,10 +88,15 @@ export function useAnnotations(currentPageIndex: number) {
         future: [],
       }
     })
+  }, [setAnnotationHistory])
+
+  const cancelHistoryTransaction = useCallback(() => {
+    transactionStartRef.current = null
   }, [])
 
   const undo = useCallback(() => {
-    setHistory((current) => {
+    transactionStartRef.current = null
+    setAnnotationHistory((current) => {
       if (current.past.length === 0) {
         return current
       }
@@ -108,10 +107,11 @@ export function useAnnotations(currentPageIndex: number) {
         future: [cloneAnnotationRootState(current.present), ...current.future],
       }
     })
-  }, [])
+  }, [setAnnotationHistory])
 
   const redo = useCallback(() => {
-    setHistory((current) => {
+    transactionStartRef.current = null
+    setAnnotationHistory((current) => {
       if (current.future.length === 0) {
         return current
       }
@@ -122,12 +122,12 @@ export function useAnnotations(currentPageIndex: number) {
         future,
       }
     })
-  }, [])
+  }, [setAnnotationHistory])
 
   const reset = useCallback(() => {
     transactionStartRef.current = null
-    setHistory(initialHistory)
-  }, [])
+    resetAnnotationsInStore()
+  }, [resetAnnotationsInStore])
 
   const replacePage = useCallback(
     (
@@ -177,6 +177,7 @@ export function useAnnotations(currentPageIndex: number) {
     dispatch,
     beginHistoryTransaction,
     endHistoryTransaction,
+    cancelHistoryTransaction,
     undo,
     redo,
     canUndo,

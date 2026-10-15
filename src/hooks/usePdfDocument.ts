@@ -28,6 +28,7 @@ export function usePdfDocument() {
   const renderTaskRef = useRef<RenderTask | null>(null)
   const canvasRenderSnapshotRef = useRef<CanvasRenderSnapshot | null>(null)
   const requestRef = useRef(0)
+  const pageChangeInProgressRef = useRef(false)
   const [phase, setPhase] = useState<'idle' | 'loading' | 'ready'>('idle')
   const [ready, setReady] = useState<ReadyPdf | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -120,6 +121,9 @@ export function usePdfDocument() {
         return { ok: false, message: 'The PDF load was cancelled.' }
       }
       const viewport = pdfPage.getViewport({ scale: 1 })
+      if (requestId !== requestRef.current) {
+        return { ok: false, message: 'The page change was cancelled.' }
+      }
       pageRef.current = pdfPage
       setReady({
         fileName,
@@ -127,16 +131,20 @@ export function usePdfDocument() {
         pageCount: pdf.numPages,
         currentPageIndex: pageIndex,
       })
-      setPhase('ready')
 
       const canvas = canvasRef.current
       if (canvas && canvasNeedsRender(canvas, pdfPage, requestId)) {
         const rendered = await renderPage(canvas, pdfPage, requestId)
         if (!rendered.ok) {
+          setPhase('ready')
           setError(rendered.message)
           return rendered
         }
       }
+      if (requestId !== requestRef.current) {
+        return { ok: false, message: 'The page change was cancelled.' }
+      }
+      setPhase('ready')
       return { ok: true }
     },
     [renderPage],
@@ -159,14 +167,17 @@ export function usePdfDocument() {
     })
   }, [renderPage])
 
-  const loadFile = async (file: File): Promise<PdfLoadResult> => {
+  const loadFromBytes = useCallback(async (
+    bytes: Uint8Array,
+    fileName: string,
+    pageIndex = 1,
+  ): Promise<PdfLoadResult> => {
     const requestId = requestRef.current + 1
     requestRef.current = requestId
     setPhase('loading')
     setError(null)
 
     try {
-      const bytes = await readFileBytes(file)
       if (requestId !== requestRef.current) {
         return { ok: false, message: 'The PDF load was cancelled.' }
       }
@@ -177,8 +188,6 @@ export function usePdfDocument() {
         return { ok: false, message }
       }
 
-      // Keep an untouched copy for export. PDF.js detaches the buffer passed to
-      // getDocument(), so reusing that same Uint8Array breaks annotated PDF download.
       const storedBytes = new Uint8Array(bytes.byteLength)
       storedBytes.set(bytes)
       pdfBytesRef.current = storedBytes
@@ -197,7 +206,11 @@ export function usePdfDocument() {
         await previous.destroy()
       }
 
-      const result = await showPage(pdf, 1, requestId, file.name)
+      const safePageIndex = Math.min(
+        Math.max(pageIndex, 1),
+        pdf.numPages,
+      )
+      const result = await showPage(pdf, safePageIndex, requestId, fileName)
       return result.ok ? { ok: true } : result
     } catch (loadError) {
       if (requestId !== requestRef.current) {
@@ -209,10 +222,26 @@ export function usePdfDocument() {
       setError(message)
       return { ok: false, message }
     }
+  }, [showPage])
+
+  const loadFile = async (file: File): Promise<PdfLoadResult> => {
+    try {
+      const bytes = await readFileBytes(file)
+      return loadFromBytes(bytes, file.name, 1)
+    } catch (loadError) {
+      console.error('Failed to read PDF file', loadError)
+      setPhase(pageRef.current ? 'ready' : 'idle')
+      const message = 'The PDF file could not be read.'
+      setError(message)
+      return { ok: false, message }
+    }
   }
 
   const goToPage = useCallback(
     async (pageIndex: number): Promise<PdfLoadResult> => {
+      if (pageChangeInProgressRef.current) {
+        return { ok: true }
+      }
       const pdf = documentRef.current
       if (!pdf || !ready) {
         return { ok: false, message: 'No PDF is loaded.' }
@@ -224,33 +253,51 @@ export function usePdfDocument() {
         return { ok: true }
       }
 
-      const requestId = requestRef.current
+      pageChangeInProgressRef.current = true
+      const requestId = requestRef.current + 1
+      requestRef.current = requestId
       setPhase('loading')
       setError(null)
-      const result = await showPage(
-        pdf,
-        pageIndex,
-        requestId,
-        ready.fileName,
-      )
-      return result
+      try {
+        const result = await showPage(
+          pdf,
+          pageIndex,
+          requestId,
+          ready.fileName,
+        )
+        if (!result.ok && documentRef.current && pageRef.current) {
+          setPhase('ready')
+        }
+        return result
+      } finally {
+        pageChangeInProgressRef.current = false
+      }
     },
     [ready, showPage],
   )
 
+  const unloadPdf = useCallback(() => {
+    pageChangeInProgressRef.current = false
+    requestRef.current += 1
+    renderTaskRef.current?.cancel()
+    canvasRenderSnapshotRef.current = null
+    const document = documentRef.current
+    documentRef.current = null
+    pageRef.current = null
+    pdfBytesRef.current = null
+    if (document) {
+      void document.destroy()
+    }
+    setReady(null)
+    setPhase('idle')
+    setError(null)
+  }, [])
+
   useEffect(() => {
     return () => {
-      requestRef.current += 1
-      renderTaskRef.current?.cancel()
-      const pdf = documentRef.current
-      documentRef.current = null
-      pageRef.current = null
-      pdfBytesRef.current = null
-      if (pdf) {
-        void pdf.destroy()
-      }
+      unloadPdf()
     }
-  }, [])
+  }, [unloadPdf])
 
   return {
     phase,
@@ -261,6 +308,7 @@ export function usePdfDocument() {
     error,
     handleCanvasRef,
     loadFile,
+    loadFromBytes,
     goToPage,
     getPdfBytes: () => {
       const bytes = pdfBytesRef.current
@@ -270,6 +318,7 @@ export function usePdfDocument() {
       return bytes.slice()
     },
     clearError: () => setError(null),
+    unloadPdf,
   }
 }
 

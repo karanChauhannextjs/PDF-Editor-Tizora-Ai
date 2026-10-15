@@ -22,6 +22,7 @@ export function PageControls({
     <div
       className="flex items-center justify-center gap-2 py-2"
       aria-label="PDF page navigation"
+      aria-busy={disabled ? true : undefined}
     >
       <Button
         type="button"

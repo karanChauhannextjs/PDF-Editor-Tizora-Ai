@@ -3,9 +3,11 @@ import {
   Circle,
   Minus,
   MousePointer2,
+  Redo2,
   Square,
   Trash2,
   Type,
+  Undo2,
 } from 'lucide-react'
 import type { AnnotationTool } from '@/types/annotation'
 import { Button } from '@/components/ui/button'
@@ -20,24 +22,53 @@ import {
 type AnnotationToolbarProps = {
   tool: AnnotationTool | null
   canDraw: boolean
+  canUndo: boolean
+  canRedo: boolean
   canDelete: boolean
   onToolChange: (tool: AnnotationTool) => void
+  onUndo: () => void
+  onRedo: () => void
   onDelete: () => void
 }
 
-export function AnnotationToolbar({
+function AnnotationToolbar({
   tool,
   canDraw,
+  canUndo,
+  canRedo,
   canDelete,
   onToolChange,
+  onUndo,
+  onRedo,
   onDelete,
 }: AnnotationToolbarProps) {
   return (
     <div
-      className="flex flex-wrap items-center gap-2"
+      className={cn(
+        'flex items-center gap-2',
+        'max-md:flex-nowrap max-md:pe-4 max-md:[&>*]:shrink-0',
+        'md:flex-wrap',
+      )}
       role="toolbar"
       aria-label="Annotation tools"
     >
+      <HistoryIconButton
+        label="Undo"
+        hint="Undo (Ctrl+Z)"
+        disabled={!canUndo}
+        onClick={onUndo}
+      >
+        <Undo2 className="size-4" />
+      </HistoryIconButton>
+      <HistoryIconButton
+        label="Redo"
+        hint="Redo (Ctrl+Shift+Z)"
+        disabled={!canRedo}
+        onClick={onRedo}
+      >
+        <Redo2 className="size-4" />
+      </HistoryIconButton>
+      <Separator orientation="vertical" className="mx-1 hidden h-6 sm:block" />
       <ToolButton
         label="Select"
         pressed={tool === 'select'}
@@ -107,6 +138,41 @@ export function AnnotationToolbar({
   )
 }
 
+function HistoryIconButton({
+  label,
+  hint,
+  disabled,
+  onClick,
+  children,
+}: {
+  label: string
+  hint: string
+  disabled?: boolean
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="outline"
+            className="size-9 rounded-xl border-border bg-background text-foreground hover:bg-muted/70"
+            disabled={disabled}
+            aria-label={label}
+            onClick={onClick}
+          >
+            {children}
+          </Button>
+        }
+      />
+      <TooltipContent>{hint}</TooltipContent>
+    </Tooltip>
+  )
+}
+
 function ToolButton({
   label,
   pressed,
@@ -143,3 +209,5 @@ function toolButtonClass(pressed: boolean) {
       'border-border bg-background text-foreground hover:bg-muted/70',
   )
 }
+
+export { AnnotationToolbar }

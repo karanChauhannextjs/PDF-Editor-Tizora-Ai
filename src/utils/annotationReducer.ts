@@ -93,6 +93,9 @@ export function annotationReducer(
       if (!existing || existing.type === 'text') {
         return state
       }
+      if (existing.stroke === action.stroke) {
+        return state
+      }
       return {
         ...state,
         annotations: state.annotations.map((annotation) =>
@@ -107,6 +110,9 @@ export function annotationReducer(
         (annotation) => annotation.id === action.id,
       )
       if (!existing || existing.type === 'text') {
+        return state
+      }
+      if (existing.strokeWidth === action.strokeWidth) {
         return state
       }
       return {

@@ -1,5 +1,6 @@
 import { FolderOpen } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import type {
   Annotation,
   AnnotationTool,
@@ -15,6 +16,7 @@ import {
 import type { PdfPageDimensions } from '@/types/pdf'
 import { useAnnotations } from '@/hooks/useAnnotations'
 import { usePdfDocument } from '@/hooks/usePdfDocument'
+import { useEditorSessionStore } from '@/stores/editorSessionStore'
 import {
   annotationKindLabel,
   isTextAnnotation,
@@ -50,6 +52,7 @@ import {
 import { cn } from '@/lib/utils'
 import { PageControls } from '@/components/editor/PageControls'
 import { PdfViewer } from '@/components/editor/PdfViewer'
+import { SessionLoader } from '@/components/editor/SessionLoader'
 import { TextAnnotationEditor } from '@/components/editor/TextAnnotationEditor'
 
 type PdfEditorProps = {
@@ -74,6 +77,8 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
     endHistoryTransaction,
     undo,
     redo,
+    canUndo,
+    canRedo,
     reset: resetAnnotations,
     replacePage,
     replaceDocument,
@@ -87,7 +92,6 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
   )
   const [textDraft, setTextDraft] = useState<TextDraft | null>(null)
   const [appError, setAppError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
   const [pending, setPending] = useState<PendingAction | null>(null)
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
   const [drawStroke, setDrawStroke] = useState(DEFAULT_STROKE)
@@ -95,11 +99,48 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
   const [textFormat, setTextFormat] = useState<TextFormat>(DEFAULT_TEXT_FORMAT)
   const [shapeColorPickerActive, setShapeColorPickerActive] = useState(false)
 
-  const page = pdf.page ?? blankPage
+  const hasHydrated = useEditorSessionStore((state) => state.hasHydrated)
+  const pdfSession = useEditorSessionStore((state) => state.pdfSession)
+  const storedBlankPage = useEditorSessionStore((state) => state.blankPage)
+  const [pdfRestoreFailed, setPdfRestoreFailed] = useState(false)
+  const setPdfSession = useEditorSessionStore((state) => state.setPdfSession)
+  const setStoredBlankPage = useEditorSessionStore((state) => state.setBlankPage)
+  const clearPersistedSession = useEditorSessionStore(
+    (state) => state.clearPersistedSession,
+  )
+  const sessionRestoredRef = useRef(false)
+  const { loadFromBytes } = pdf
+
+  const isRestoringPdf =
+    pdfSession !== null && pdf.page === null && !pdfRestoreFailed
+
+  const page =
+    pdf.page ?? (pdfSession ? null : blankPage ?? storedBlankPage)
   const activeTool: AnnotationTool | null = page ? (tool ?? 'select') : null
   const selected =
     annotations.find((annotation) => annotation.id === selectedId) ?? null
   const banner = appError ?? pdf.error
+
+  useEffect(() => {
+    if (!hasHydrated || sessionRestoredRef.current) {
+      return
+    }
+    sessionRestoredRef.current = true
+    const { pdfSession } = useEditorSessionStore.getState()
+    if (pdfSession) {
+      void loadFromBytes(
+          new Uint8Array(pdfSession.pdfData),
+          pdfSession.fileName,
+          pdfSession.currentPageIndex,
+        )
+        .then((result) => {
+          if (!result.ok) {
+            setPdfRestoreFailed(true)
+            setAppError(result.message)
+          }
+        })
+    }
+  }, [hasHydrated, loadFromBytes])
 
   useEffect(() => {
     if (pdf.page) {
@@ -132,6 +173,11 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
         }
         return
       }
+      if (mod && event.key.toLowerCase() === 'y') {
+        event.preventDefault()
+        redo()
+        return
+      }
       if (event.key !== 'Delete' && event.key !== 'Backspace') {
         return
       }
@@ -161,16 +207,24 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
     }
     resetAnnotations()
     setBlankPage(null)
+    setStoredBlankPage(null)
     setTextDraft(null)
-    setNotice(null)
     setAppError(null)
     pdf.clearError()
+    setPdfRestoreFailed(false)
+    const pdfBytes = pdf.getPdfBytes()
+    if (pdfBytes) {
+      setPdfSession({
+        fileName: file.name,
+        pdfData: Array.from(pdfBytes),
+        currentPageIndex: 1,
+      })
+    }
   }
 
   const handleOpenPdf = (file: File) => {
     const validation = validatePdfFile(file)
     if (!validation.ok) {
-      setNotice(null)
       setAppError(validation.message)
       return
     }
@@ -184,7 +238,6 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
   const applyImport = (serialized: string) => {
     const parsed = parseAnnotationDocument(serialized)
     if (!parsed.ok) {
-      setNotice(null)
       setAppError(parsed.message)
       return
     }
@@ -209,7 +262,7 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
       replaceDocument(pages, pageDimensions)
       setTextDraft(null)
       setAppError(null)
-      setNotice(
+      toast.success(
         `Imported ${count} annotation${count === 1 ? '' : 's'} across ${Object.keys(pages).length} page${Object.keys(pages).length === 1 ? '' : 's'}.`,
       )
       return
@@ -224,6 +277,8 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
     replacePage(annotationPageIndex, target, scaled)
     if (!pdf.page) {
       setBlankPage(parsed.import.page)
+      setStoredBlankPage(parsed.import.page)
+      setPdfSession(null)
     }
     setTextDraft(null)
     setAppError(null)
@@ -231,7 +286,7 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
       ? ''
       : ' Coordinates were scaled to the current page.'
     const count = scaled.length
-    setNotice(
+    toast.success(
       `Imported ${count} annotation${count === 1 ? '' : 's'}.${scaledNote}`,
     )
   }
@@ -239,7 +294,6 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
   const handleImportAnnotations = async (file: File) => {
     const validation = validateJsonFile(file)
     if (!validation.ok) {
-      setNotice(null)
       setAppError(validation.message)
       return
     }
@@ -249,7 +303,6 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
       serialized = await file.text()
     } catch (error) {
       console.error('Failed to read annotation file', error)
-      setNotice(null)
       setAppError('The annotation file could not be read.')
       return
     }
@@ -265,7 +318,6 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
     const pdfBytes = pdf.getPdfBytes()
     const fileName = pdf.fileName
     if (!pdfBytes || !fileName || !page) {
-      setNotice(null)
       setAppError(
         pdf.fileName && pdf.getPdfBytes() === null
           ? 'Re-open the PDF, then try downloading again.'
@@ -274,7 +326,6 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
       return
     }
     if (totalAnnotationCount === 0) {
-      setNotice(null)
       setAppError('There are no annotations to include in the PDF.')
       return
     }
@@ -282,11 +333,10 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
     void downloadAnnotatedPdf(pdfBytes, exportRootState(), fileName)
       .then(() => {
         setAppError(null)
-        setNotice('Downloaded PDF with your annotations applied.')
+        toast.success('Downloaded PDF with your annotations applied.')
       })
       .catch((error) => {
         console.error('Failed to export annotated PDF', error)
-        setNotice(null)
         setAppError('The annotated PDF could not be created.')
       })
       .finally(() => {
@@ -307,12 +357,11 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
       }
       downloadAnnotationDocument(document)
       setAppError(null)
-      setNotice(
+      toast.success(
         'Exported annotations as JSON. They are not embedded in the PDF.',
       )
     } catch (error) {
       console.error('Failed to export annotations', error)
-      setNotice(null)
       setAppError('The annotation file could not be exported.')
     }
   }
@@ -378,15 +427,63 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
     deleteAnnotation(selectedId)
   }
 
+  const handleResetAnnotations = () => {
+    if (
+      totalAnnotationCount === 0 &&
+      !canUndo &&
+      !canRedo
+    ) {
+      return
+    }
+    resetAnnotations()
+    setTextDraft(null)
+    setAppError(null)
+    toast.success('All annotations were removed. Undo history was cleared.')
+  }
+
+  const canResetAnnotations =
+    page !== null &&
+    (totalAnnotationCount > 0 || canUndo || canRedo)
+
+  const canRemovePdf = page !== null
+
+  const handleRemovePdf = () => {
+    if (!page) {
+      return
+    }
+    pdf.unloadPdf()
+    resetAnnotations()
+    clearPersistedSession()
+    setBlankPage(null)
+    setTextDraft(null)
+    setTool(null)
+    setAppError(null)
+    toast.success('PDF and all annotations were removed.')
+  }
+
+  if (!hasHydrated) {
+    return <SessionLoader title="Restoring your session…" />
+  }
+
+  if (isRestoringPdf) {
+    return (
+      <SessionLoader
+        title="Opening your PDF…"
+        subtitle={pdfSession?.fileName}
+      />
+    )
+  }
+
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-muted/40">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b bg-background px-4 py-3">
-        <div>
+      <header className="flex shrink-0 flex-col gap-3 border-b bg-background px-4 py-3 md:flex-row md:flex-wrap md:items-center md:justify-between">
+        <div className="min-w-0 shrink-0">
           <h1 className="text-lg font-semibold tracking-tight">PDF Editor</h1>
-          <p className="text-xs text-muted-foreground">
+          <p className="hidden text-xs text-muted-foreground sm:block">
             Annotate a PDF page, export JSON, or download an annotated PDF.
           </p>
         </div>
+        <div className="min-w-0 max-md:-mx-4 max-md:px-4">
         <FileControls
           canImport={pdf.page !== null}
           canExport={totalAnnotationCount > 0 && page !== null}
@@ -403,24 +500,34 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
           }}
           onExportAnnotations={handleExportAnnotations}
           onDownloadPdf={handleDownloadPdf}
+          canResetAnnotations={canResetAnnotations}
+          onResetAnnotations={handleResetAnnotations}
+          canRemovePdf={canRemovePdf}
+          onRemovePdf={handleRemovePdf}
           onFileError={(message) => {
-            setNotice(null)
             setAppError(message)
           }}
         />
+        </div>
       </header>
 
       <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-4 py-4">
         <div className="flex shrink-0 flex-col gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-3">
+            <div className="min-w-0 max-md:-mx-4 max-md:overflow-x-auto max-md:scroll-px-4 max-md:px-4 max-md:pb-1 max-md:[-webkit-overflow-scrolling:touch]">
             <AnnotationToolbar
               tool={activeTool}
               canDraw={page !== null}
+              canUndo={canUndo}
+              canRedo={canRedo}
               canDelete={selectedId !== null}
               onToolChange={handleToolChange}
+              onUndo={undo}
+              onRedo={redo}
               onDelete={handleDelete}
             />
-            <p className="text-sm text-muted-foreground">
+            </div>
+            <p className="shrink-0 text-sm text-muted-foreground">
               Active tool:{' '}
               <span className="font-medium text-foreground">
                 {activeTool === null ? 'None' : toolLabel(activeTool)}
@@ -428,6 +535,7 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
             </p>
           </div>
 
+          <div className="min-w-0 max-md:-mx-4 max-md:px-4">
           <AnnotationStyleBar
             tool={activeTool}
             selected={selected}
@@ -461,18 +569,15 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
               dispatch({ type: 'updateTextFormat', id: selectedId, format })
             }}
             onShapeColorPickerActiveChange={setShapeColorPickerActive}
+            onBeginStyleHistoryTransaction={beginHistoryTransaction}
+            onEndStyleHistoryTransaction={endHistoryTransaction}
           />
+          </div>
 
           {banner ? (
             <Alert variant="destructive">
               <AlertTitle>Something went wrong</AlertTitle>
               <AlertDescription>{banner}</AlertDescription>
-            </Alert>
-          ) : null}
-          {notice ? (
-            <Alert>
-              <AlertTitle>Annotations</AlertTitle>
-              <AlertDescription>{notice}</AlertDescription>
             </Alert>
           ) : null}
           {page ? (
@@ -506,16 +611,15 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
           ) : null}
         </div>
 
-        <section className="mt-4 flex min-h-0 flex-1 gap-3 overflow-hidden">
+        <section
+          className="mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden max-md:pb-2 md:flex-row md:overflow-hidden"
+        >
           <div
             className={cn(
-              'min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border bg-muted/60 p-4',
+              'min-h-0 min-w-0 w-full flex-1 overflow-auto rounded-xl border bg-muted/60 p-4 md:min-h-0',
               !page && 'flex flex-col',
             )}
           >
-            {pdf.phase === 'loading' ? (
-              <p className="mb-3 text-sm text-muted-foreground">Loading PDF…</p>
-            ) : null}
             {page ? (
               <>
                 <PageControls
@@ -527,6 +631,15 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
                     void pdf.goToPage(nextPage).then((result) => {
                       if (!result.ok) {
                         setAppError(result.message)
+                        return
+                      }
+                      const pdfBytes = pdf.getPdfBytes()
+                      if (pdfBytes && pdf.fileName) {
+                        setPdfSession({
+                          fileName: pdf.fileName,
+                          pdfData: Array.from(pdfBytes),
+                          currentPageIndex: nextPage,
+                        })
                       }
                     })
                   }}
@@ -570,12 +683,17 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
                   ) : null}
                 </PdfViewer>
               </>
+            ) : pdf.phase === 'loading' ? (
+              <SessionLoader
+                fullScreen={false}
+                title="Loading PDF…"
+                subtitle={pdf.fileName}
+              />
             ) : (
               <EmptyState
-                isLoading={pdf.phase === 'loading'}
+                isLoading={false}
                 onOpenPdf={handleOpenPdf}
                 onFileError={(message) => {
-                  setNotice(null)
                   setAppError(message)
                 }}
               />

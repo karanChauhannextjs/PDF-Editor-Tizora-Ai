@@ -35,6 +35,8 @@ type AnnotationStyleBarProps = {
   onUpdateSelectedStrokeWidth: (strokeWidth: number) => void
   onUpdateSelectedTextFormat: (format: Partial<TextFormat>) => void
   onShapeColorPickerActiveChange?: (active: boolean) => void
+  onBeginStyleHistoryTransaction?: () => void
+  onEndStyleHistoryTransaction?: () => void
 }
 
 export function AnnotationStyleBar({
@@ -51,6 +53,8 @@ export function AnnotationStyleBar({
   onUpdateSelectedStrokeWidth,
   onUpdateSelectedTextFormat,
   onShapeColorPickerActiveChange,
+  onBeginStyleHistoryTransaction,
+  onEndStyleHistoryTransaction,
 }: AnnotationStyleBarProps) {
   const showTextControls =
     tool === 'text' ||
@@ -115,7 +119,11 @@ export function AnnotationStyleBar({
 
   return (
     <div
-      className="flex min-h-[3.25rem] flex-wrap items-center gap-3 rounded-lg border bg-background/80 px-3 py-2"
+      className={cn(
+        'flex min-h-[3.25rem] items-center gap-3 rounded-lg border bg-background/80 px-3 py-2',
+        'max-md:flex-nowrap max-md:overflow-x-auto max-md:scroll-px-4 max-md:pe-4 max-md:pb-1 max-md:[-webkit-overflow-scrolling:touch] max-md:[&>*]:shrink-0',
+        'md:flex-wrap',
+      )}
       role="group"
       aria-label="Annotation style"
     >
@@ -131,6 +139,8 @@ export function AnnotationStyleBar({
           value={shapeStroke}
           onChange={setShapeStroke}
           onPickerActiveChange={onShapeColorPickerActiveChange}
+          onBeginHistoryTransaction={onBeginStyleHistoryTransaction}
+          onEndHistoryTransaction={onEndStyleHistoryTransaction}
         />
       ) : null}
 
@@ -158,6 +168,8 @@ export function AnnotationStyleBar({
             }
             value={activeText.color}
             onChange={(color) => patchTextFormat({ color })}
+            onBeginHistoryTransaction={onBeginStyleHistoryTransaction}
+            onEndHistoryTransaction={onEndStyleHistoryTransaction}
           />
           <FontSizeSelect
             disabled={!canEditTextStyle}
@@ -203,6 +215,8 @@ function ColorPickerField({
   onChange,
   disabled = false,
   onPickerActiveChange,
+  onBeginHistoryTransaction,
+  onEndHistoryTransaction,
 }: {
   label: string
   instanceKey: string
@@ -210,6 +224,8 @@ function ColorPickerField({
   onChange: (color: string) => void
   disabled?: boolean
   onPickerActiveChange?: (active: boolean) => void
+  onBeginHistoryTransaction?: () => void
+  onEndHistoryTransaction?: () => void
 }) {
   const safeValue = normalizeHexColor(value) ?? DEFAULT_STROKE
   return (
@@ -220,6 +236,8 @@ function ColorPickerField({
       disabled={disabled}
       onChange={onChange}
       onPickerActiveChange={onPickerActiveChange}
+      onBeginHistoryTransaction={onBeginHistoryTransaction}
+      onEndHistoryTransaction={onEndHistoryTransaction}
     />
   )
 }
@@ -230,12 +248,16 @@ function ColorPickerFieldInner({
   onChange,
   disabled = false,
   onPickerActiveChange,
+  onBeginHistoryTransaction,
+  onEndHistoryTransaction,
 }: {
   label: string
   safeValue: string
   onChange: (color: string) => void
   disabled?: boolean
   onPickerActiveChange?: (active: boolean) => void
+  onBeginHistoryTransaction?: () => void
+  onEndHistoryTransaction?: () => void
 }) {
   const [hexInput, setHexInput] = useState(safeValue)
   const fieldRef = useRef<HTMLDivElement>(null)
@@ -246,8 +268,17 @@ function ColorPickerFieldInner({
       if (blurTimerRef.current !== null) {
         window.clearTimeout(blurTimerRef.current)
       }
+      onEndHistoryTransaction?.()
     }
-  }, [])
+  }, [onEndHistoryTransaction])
+
+  useEffect(() => {
+    if (fieldRef.current?.contains(document.activeElement)) {
+      return
+    }
+    // Keep hex input aligned with undo/redo without remounting the color picker.
+    setHexInput(safeValue)
+  }, [safeValue])
 
   const setPickerActive = (active: boolean) => {
     onPickerActiveChange?.(active)
@@ -282,6 +313,10 @@ function ColorPickerFieldInner({
     onPickerActiveChange?.(false)
   }, [disabled, onPickerActiveChange])
 
+  const endStyleHistory = () => {
+    onEndHistoryTransaction?.()
+  }
+
   const commitHex = () => {
     const normalized = normalizeHexColor(hexInput)
     if (normalized) {
@@ -290,6 +325,7 @@ function ColorPickerFieldInner({
     } else {
       setHexInput(safeValue)
     }
+    endStyleHistory()
   }
 
   return (
@@ -303,6 +339,7 @@ function ColorPickerFieldInner({
         if (disabled) {
           return
         }
+        onBeginHistoryTransaction?.()
         cancelPickerInactive()
         setPickerActive(true)
       }}
@@ -321,6 +358,7 @@ function ColorPickerFieldInner({
         ) {
           return
         }
+        endStyleHistory()
         schedulePickerInactive()
       }}
     >
@@ -344,7 +382,14 @@ function ColorPickerFieldInner({
           onChange(event.target.value)
           setHexInput(event.target.value)
         }}
-        onBlur={() => schedulePickerInactive()}
+        onBlur={(event) => {
+          if (event.relatedTarget === null) {
+            schedulePickerInactive()
+            return
+          }
+          endStyleHistory()
+          schedulePickerInactive()
+        }}
         aria-label={`${label} picker`}
       />
       <Input

@@ -1,4 +1,12 @@
-import { Download, FileDown, FileOutput, FolderOpen, Upload } from 'lucide-react'
+import {
+  Download,
+  Eraser,
+  FileDown,
+  FileOutput,
+  FileX2,
+  FolderOpen,
+  Upload,
+} from 'lucide-react'
 import { SAMPLE_ANNOTATION_DOCUMENT } from '@/data/sampleAnnotationDocument'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -15,6 +23,10 @@ type FileControlsProps = {
   onImportAnnotations: (file: File) => void
   onExportAnnotations: () => void
   onDownloadPdf: () => void
+  canResetAnnotations: boolean
+  onResetAnnotations: () => void
+  canRemovePdf: boolean
+  onRemovePdf: () => void
   onFileError: (message: string) => void
 }
 
@@ -28,6 +40,10 @@ export function FileControls({
   onImportAnnotations,
   onExportAnnotations,
   onDownloadPdf,
+  canResetAnnotations,
+  onResetAnnotations,
+  canRemovePdf,
+  onRemovePdf,
   onFileError,
 }: FileControlsProps) {
   const primaryActionClass = cn(
@@ -41,7 +57,13 @@ export function FileControls({
   )
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div
+      className={cn(
+        'flex items-center gap-2',
+        'max-md:flex-nowrap max-md:overflow-x-auto max-md:scroll-px-4 max-md:pe-4 max-md:pb-1 max-md:[-webkit-overflow-scrolling:touch] max-md:[&>*]:shrink-0',
+        'md:flex-wrap',
+      )}
+    >
       <label
         className={cn(
           primaryActionClass,
@@ -128,6 +150,26 @@ export function FileControls({
       >
         <FileOutput />
         {isDownloadingPdf ? 'Preparing…' : 'Download PDF'}
+      </button>
+      <button
+        type="button"
+        className={secondaryActionClass}
+        disabled={!canResetAnnotations}
+        aria-label="Reset annotations"
+        onClick={onResetAnnotations}
+      >
+        <Eraser />
+        Reset annotations
+      </button>
+      <button
+        type="button"
+        className={secondaryActionClass}
+        disabled={!canRemovePdf || isLoading}
+        aria-label="Remove PDF"
+        onClick={onRemovePdf}
+      >
+        <FileX2 />
+        Remove PDF
       </button>
     </div>
   )
