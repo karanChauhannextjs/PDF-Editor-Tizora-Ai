@@ -257,11 +257,19 @@ export function AnnotationLayer({
         ? 'cursor-text'
         : 'cursor-crosshair'
 
+  const needsPreciseTouch =
+    isTransforming ||
+    tool === 'rectangle' ||
+    tool === 'circle' ||
+    tool === 'line' ||
+    tool === 'text'
+  const touchClass = needsPreciseTouch ? 'touch-none' : 'touch-pan-y'
+
   return (
     <svg
       ref={svgRef}
       data-testid="annotation-svg"
-      className={`absolute inset-0 h-full w-full touch-none ${cursorClass}`}
+      className={`absolute inset-0 h-full w-full ${touchClass} ${cursorClass}`}
       viewBox={`0 0 ${page.width} ${page.height}`}
       role="application"
       aria-label="Annotation layer"

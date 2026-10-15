@@ -22,7 +22,7 @@ export function AnnotationListPanel({
 
   return (
     <aside
-      className="flex w-full shrink-0 flex-col overflow-hidden rounded-xl border bg-background md:w-56"
+      className="flex w-full max-h-[min(30dvh,11.5rem)] shrink-0 flex-col overflow-hidden rounded-xl border bg-background md:max-h-none md:min-h-0 md:w-56 md:self-stretch"
       aria-label="Annotation layers"
     >
       <div className="border-b px-3 py-2">

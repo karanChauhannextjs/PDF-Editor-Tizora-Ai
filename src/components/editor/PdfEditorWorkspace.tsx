@@ -62,10 +62,13 @@ export function PdfEditorWorkspace({
   onDeleteAnnotation,
 }: PdfEditorWorkspaceProps) {
   return (
-    <section className="mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden max-md:pb-2 md:flex-row md:overflow-hidden">
+    <section
+      className="mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-hidden md:min-h-0 md:flex-row"
+    >
       <div
         className={cn(
-          'min-h-0 min-w-0 w-full flex-1 overflow-auto rounded-xl border bg-muted/60 p-4 md:min-h-0',
+          'flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain rounded-xl border bg-muted/60 p-4 [-webkit-overflow-scrolling:touch]',
+          !page && 'max-md:overflow-visible',
           !page && 'flex flex-col',
         )}
       >
