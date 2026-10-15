@@ -1,5 +1,24 @@
 import type { StateStorage } from 'zustand/middleware'
 
+const testMemory = new Map<string, string>()
+
+/** In-memory storage for Vitest (happy-dom has no IndexedDB). */
+function createMemoryStorage(): StateStorage {
+  return {
+    getItem: (name) => testMemory.get(name) ?? null,
+    setItem: (name, value) => {
+      testMemory.set(name, value)
+    },
+    removeItem: (name) => {
+      testMemory.delete(name)
+    },
+  }
+}
+
+export function clearMemoryStorageForTests(): void {
+  testMemory.clear()
+}
+
 const DB_NAME = 'tizora-pdf-editor'
 const STORE_NAME = 'session'
 const DB_VERSION = 1
@@ -83,6 +102,9 @@ function idbRemove(key: string): Promise<void> {
 }
 
 export function createIdbStorage(): StateStorage {
+  if (import.meta.env.VITEST) {
+    return createMemoryStorage()
+  }
   return {
     getItem: (name) => idbGet(name),
     setItem: (name, value) => idbSet(name, value),

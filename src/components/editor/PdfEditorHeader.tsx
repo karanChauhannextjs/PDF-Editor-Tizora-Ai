@@ -1,4 +1,5 @@
 import { FileControls } from '@/components/editor/FileControls'
+import { PdfEditorLogo } from '@/components/editor/PdfEditorLogo'
 
 type PdfEditorHeaderProps = {
   canImport: boolean
@@ -35,12 +36,7 @@ export function PdfEditorHeader({
 }: PdfEditorHeaderProps) {
   return (
     <header className="flex shrink-0 flex-col gap-3 border-b bg-background px-4 py-3 md:flex-row md:flex-wrap md:items-center md:justify-between">
-      <div className="min-w-0 shrink-0">
-        <h1 className="text-lg font-semibold tracking-tight">PDF Editor</h1>
-        <p className="hidden text-xs text-muted-foreground sm:block">
-          Annotate a PDF page, export JSON, or download an annotated PDF.
-        </p>
-      </div>
+      <PdfEditorLogo className="min-w-0 shrink-0" />
       <div className="min-w-0 max-md:-mx-4 max-md:px-4">
         <FileControls
           canImport={canImport}
