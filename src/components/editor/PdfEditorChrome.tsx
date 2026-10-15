@@ -130,15 +130,12 @@ export function PdfEditorChrome({
       ) : null}
 
       {page ? (
-        <div
-          className="flex min-h-8 flex-wrap items-center gap-3 text-sm"
-          aria-live="polite"
-        >
+        <div className="flex min-h-8 flex-wrap items-center gap-3 text-sm" aria-live="polite">
           {selected ? (
             <>
               <span>
-                Selected {annotationKindLabel(selected)}. Drag it to move, or
-                press Delete to remove it.
+                Selected {annotationKindLabel(selected)}. Drag it to move, or press Delete to remove
+                it.
               </span>
               {isTextAnnotation(selected) ? (
                 <Button

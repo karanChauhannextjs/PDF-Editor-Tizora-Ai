@@ -71,20 +71,14 @@ export function AnnotationLayer({
   const [preview, setPreview] = useState<ShapeDraft | null>(null)
   const [isTransforming, setIsTransforming] = useState(false)
 
-  const selected =
-    annotations.find((annotation) => annotation.id === selectedId) ?? null
+  const selected = annotations.find((annotation) => annotation.id === selectedId) ?? null
 
   const readPoint = (event: { clientX: number; clientY: number }) => {
     const svg = svgRef.current
     if (!svg) {
       return null
     }
-    return clientToPagePoint(
-      event.clientX,
-      event.clientY,
-      svg.getBoundingClientRect(),
-      page,
-    )
+    return clientToPagePoint(event.clientX, event.clientY, svg.getBoundingClientRect(), page)
   }
 
   const handlePointerDown = (event: PointerEvent<SVGSVGElement>) => {
@@ -211,13 +205,7 @@ export function AnnotationLayer({
       })
       return
     }
-    const next = rotateAnnotation(
-      annotation,
-      point,
-      drag.startPointer,
-      drag.startRotation,
-      page,
-    )
+    const next = rotateAnnotation(annotation, point, drag.startPointer, drag.startRotation, page)
     dispatch({
       type: 'updateAnnotation',
       id: drag.id,
@@ -231,10 +219,7 @@ export function AnnotationLayer({
       return
     }
     const point = readPoint(event)
-    const wasTransform =
-      drag.kind === 'move' ||
-      drag.kind === 'resize' ||
-      drag.kind === 'rotate'
+    const wasTransform = drag.kind === 'move' || drag.kind === 'resize' || drag.kind === 'rotate'
     dragRef.current = null
     setIsTransforming(false)
     releasePointer(event.currentTarget, event.pointerId)
@@ -262,16 +247,15 @@ export function AnnotationLayer({
     })
   }
 
-  const cursorClass =
-    !tool
-      ? 'cursor-default'
-      : tool === 'select'
-        ? isTransforming
-          ? 'cursor-grabbing'
-          : 'cursor-default'
-        : tool === 'text'
-          ? 'cursor-text'
-          : 'cursor-crosshair'
+  const cursorClass = !tool
+    ? 'cursor-default'
+    : tool === 'select'
+      ? isTransforming
+        ? 'cursor-grabbing'
+        : 'cursor-default'
+      : tool === 'text'
+        ? 'cursor-text'
+        : 'cursor-crosshair'
 
   return (
     <svg
@@ -299,30 +283,18 @@ export function AnnotationLayer({
           <AnnotationItem
             key={annotation.id}
             annotation={annotation}
-            showSelectionOutline={
-              annotation.id === selectedId && !hideSelectionChrome
-            }
+            showSelectionOutline={annotation.id === selectedId && !hideSelectionChrome}
             interactive={tool === 'select'}
             onPointerDown={handleAnnotationPointerDown}
             onEditText={onEditText}
           />
         ),
       )}
-      {selected &&
-      tool === 'select' &&
-      !hideSelectionChrome &&
-      selected.id !== editingTextId ? (
-        <SelectionHandles
-          annotation={selected}
-          onHandlePointerDown={handleHandlePointerDown}
-        />
+      {selected && tool === 'select' && !hideSelectionChrome && selected.id !== editingTextId ? (
+        <SelectionHandles annotation={selected} onHandlePointerDown={handleHandlePointerDown} />
       ) : null}
       {preview ? (
-        <PreviewShape
-          draft={preview}
-          stroke={drawStroke}
-          strokeWidth={drawStrokeWidth}
-        />
+        <PreviewShape draft={preview} stroke={drawStroke} strokeWidth={drawStrokeWidth} />
       ) : null}
     </svg>
   )
@@ -367,26 +339,12 @@ function PreviewShape({
 
   switch (draft.type) {
     case 'rectangle':
-      return (
-        <rect
-          x={draft.x}
-          y={draft.y}
-          width={draft.width}
-          height={draft.height}
-          {...shared}
-        />
-      )
+      return <rect x={draft.x} y={draft.y} width={draft.width} height={draft.height} {...shared} />
     case 'circle':
       return <circle cx={draft.cx} cy={draft.cy} r={draft.radius} {...shared} />
     case 'line':
       return (
-        <line
-          x1={draft.start.x}
-          y1={draft.start.y}
-          x2={draft.end.x}
-          y2={draft.end.y}
-          {...shared}
-        />
+        <line x1={draft.start.x} y1={draft.start.y} x2={draft.end.x} y2={draft.end.y} {...shared} />
       )
     default: {
       const unreachable: never = draft

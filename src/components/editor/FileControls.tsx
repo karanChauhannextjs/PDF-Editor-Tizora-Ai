@@ -1,12 +1,4 @@
-import {
-  Download,
-  Eraser,
-  FileDown,
-  FileOutput,
-  FileX2,
-  FolderOpen,
-  Upload,
-} from 'lucide-react'
+import { Download, Eraser, FileDown, FileOutput, FileX2, FolderOpen, Upload } from 'lucide-react'
 import { SAMPLE_ANNOTATION_DOCUMENT } from '@/data/sampleAnnotationDocument'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -64,12 +56,7 @@ export function FileControls({
         'md:flex-wrap',
       )}
     >
-      <label
-        className={cn(
-          primaryActionClass,
-          isLoading && 'pointer-events-none opacity-50',
-        )}
-      >
+      <label className={cn(primaryActionClass, isLoading && 'pointer-events-none opacity-50')}>
         <FolderOpen />
         Open PDF
         <input
@@ -83,12 +70,7 @@ export function FileControls({
             if (!selected) {
               return
             }
-            void acceptSelectedFile(
-              event.currentTarget,
-              selected,
-              onOpenPdf,
-              onFileError,
-            )
+            void acceptSelectedFile(event.currentTarget, selected, onOpenPdf, onFileError)
           }}
         />
       </label>
@@ -96,21 +78,13 @@ export function FileControls({
         type="button"
         className={secondaryActionClass}
         onClick={() =>
-          downloadAnnotationDocument(
-            SAMPLE_ANNOTATION_DOCUMENT,
-            'sample-annotations.json',
-          )
+          downloadAnnotationDocument(SAMPLE_ANNOTATION_DOCUMENT, 'sample-annotations.json')
         }
       >
         <FileDown />
         Sample JSON
       </button>
-      <label
-        className={cn(
-          secondaryActionClass,
-          !canImport && 'pointer-events-none opacity-50',
-        )}
-      >
+      <label className={cn(secondaryActionClass, !canImport && 'pointer-events-none opacity-50')}>
         <Upload />
         Import JSON
         <input
@@ -124,12 +98,7 @@ export function FileControls({
             if (!selected) {
               return
             }
-            void acceptSelectedFile(
-              event.currentTarget,
-              selected,
-              onImportAnnotations,
-              onFileError,
-            )
+            void acceptSelectedFile(event.currentTarget, selected, onImportAnnotations, onFileError)
           }}
         />
       </label>
@@ -176,8 +145,7 @@ export function FileControls({
 }
 
 /** Matches header file actions: pill shape, icon + label spacing. */
-export const fileHeaderButtonClass =
-  'h-9 gap-2 rounded-xl px-4 text-sm [&_svg]:text-current'
+export const fileHeaderButtonClass = 'h-9 gap-2 rounded-xl px-4 text-sm [&_svg]:text-current'
 
 export async function acceptSelectedFile(
   input: HTMLInputElement,

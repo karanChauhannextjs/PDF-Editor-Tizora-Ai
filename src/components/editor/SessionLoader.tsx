@@ -6,11 +6,7 @@ type SessionLoaderProps = {
   fullScreen?: boolean
 }
 
-export function SessionLoader({
-  title,
-  subtitle,
-  fullScreen = true,
-}: SessionLoaderProps) {
+export function SessionLoader({ title, subtitle, fullScreen = true }: SessionLoaderProps) {
   return (
     <div
       className={cn(
@@ -23,14 +19,9 @@ export function SessionLoader({
     >
       <div className="flex max-w-sm flex-col items-center gap-2 text-center">
         <p className="text-sm font-medium text-foreground">{title}</p>
-        {subtitle ? (
-          <p className="text-xs text-muted-foreground">{subtitle}</p>
-        ) : null}
+        {subtitle ? <p className="text-xs text-muted-foreground">{subtitle}</p> : null}
       </div>
-      <div
-        className="h-1 w-56 overflow-hidden rounded-full bg-border"
-        aria-hidden="true"
-      >
+      <div className="h-1 w-56 overflow-hidden rounded-full bg-border" aria-hidden="true">
         <div className="session-loader-bar h-full w-2/5 rounded-full bg-foreground/70" />
       </div>
     </div>

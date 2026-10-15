@@ -55,8 +55,7 @@ export type TextFormat = Pick<
   'fontSize' | 'color' | 'bold' | 'italic' | 'underline'
 >
 
-export type Annotation =
-  RectangleAnnotation | CircleAnnotation | LineAnnotation | TextAnnotation
+export type Annotation = RectangleAnnotation | CircleAnnotation | LineAnnotation | TextAnnotation
 
 export const DEFAULT_STROKE = '#1d4ed8'
 export const DEFAULT_STROKE_WIDTH = 2

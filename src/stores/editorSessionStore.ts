@@ -94,9 +94,7 @@ export const useEditorSessionStore = create<EditorSessionState>()(
   ),
 )
 
-export function cloneAnnotationHistory(
-  history: AnnotationHistoryState,
-): AnnotationHistoryState {
+export function cloneAnnotationHistory(history: AnnotationHistoryState): AnnotationHistoryState {
   return {
     past: history.past.map(cloneAnnotationRootState),
     present: cloneAnnotationRootState(history.present),

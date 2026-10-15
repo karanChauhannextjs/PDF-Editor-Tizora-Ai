@@ -33,10 +33,7 @@ type PdfEditorWorkspaceProps = {
   onBeginHistoryTransaction: () => void
   onEndHistoryTransaction: () => void
   onSelectAnnotation: (id: string) => void
-  onReorderAnnotation: (
-    id: string,
-    direction: 'forward' | 'backward',
-  ) => void
+  onReorderAnnotation: (id: string, direction: 'forward' | 'backward') => void
   onDeleteAnnotation: (id: string) => void
 }
 
@@ -65,9 +62,7 @@ export function PdfEditorWorkspace({
   onDeleteAnnotation,
 }: PdfEditorWorkspaceProps) {
   return (
-    <section
-      className="mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden max-md:pb-2 md:flex-row md:overflow-hidden"
-    >
+    <section className="mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden max-md:pb-2 md:flex-row md:overflow-hidden">
       <div
         className={cn(
           'min-h-0 min-w-0 w-full flex-1 overflow-auto rounded-xl border bg-muted/60 p-4 md:min-h-0',
@@ -97,9 +92,7 @@ export function PdfEditorWorkspace({
                 drawStrokeWidth={drawStrokeWidth}
                 annotations={annotations}
                 selectedId={selectedId}
-                editingTextId={
-                  textDraft?.mode === 'edit' ? textDraft.id : null
-                }
+                editingTextId={textDraft?.mode === 'edit' ? textDraft.id : null}
                 hideSelectionChrome={shapeColorPickerActive}
                 dispatch={dispatch}
                 onTextRequest={onTextRequest}
@@ -112,9 +105,7 @@ export function PdfEditorWorkspace({
                   page={page}
                   x={textDraft.x}
                   y={textDraft.y}
-                  initialText={
-                    textDraft.mode === 'edit' ? textDraft.text : ''
-                  }
+                  initialText={textDraft.mode === 'edit' ? textDraft.text : ''}
                   onCommit={onCommitText}
                   onCancel={onCancelText}
                 />
@@ -122,17 +113,9 @@ export function PdfEditorWorkspace({
             </PdfViewer>
           </>
         ) : pdf.phase === 'loading' ? (
-          <SessionLoader
-            fullScreen={false}
-            title="Loading PDF…"
-            subtitle={pdf.fileName}
-          />
+          <SessionLoader fullScreen={false} title="Loading PDF…" subtitle={pdf.fileName} />
         ) : (
-          <PdfEditorEmptyState
-            isLoading={false}
-            onOpenPdf={onOpenPdf}
-            onFileError={onFileError}
-          />
+          <PdfEditorEmptyState isLoading={false} onOpenPdf={onOpenPdf} onFileError={onFileError} />
         )}
       </div>
       {annotations.length > 0 ? (

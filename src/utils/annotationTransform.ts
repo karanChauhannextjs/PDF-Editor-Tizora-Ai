@@ -5,15 +5,7 @@ import { textBlockSize } from '@/utils/annotationGeometry'
 import { clampFontSize } from '@/utils/annotationStyle'
 import { clamp } from '@/utils/coordinates'
 
-export type ResizeHandle =
-  | 'nw'
-  | 'ne'
-  | 'sw'
-  | 'se'
-  | 'start'
-  | 'end'
-  | 'radius'
-  | 'text-scale'
+export type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se' | 'start' | 'end' | 'radius' | 'text-scale'
 
 export const HANDLE_RADIUS = 6
 export const ROTATE_HANDLE_OFFSET = 36
@@ -88,11 +80,7 @@ type PageBounds = {
   maxY: number
 }
 
-export function rotatePointAroundPivot(
-  point: Point,
-  pivot: Point,
-  degreesCw: number,
-): Point {
+export function rotatePointAroundPivot(point: Point, pivot: Point, degreesCw: number): Point {
   if (degreesCw === 0) {
     return point
   }
@@ -211,10 +199,7 @@ export function translateAnnotationByDelta(
   }
 }
 
-export function clampAnnotationToPage(
-  annotation: Annotation,
-  page: PdfPageDimensions,
-): Annotation {
+export function clampAnnotationToPage(annotation: Annotation, page: PdfPageDimensions): Annotation {
   const bounds = getAnnotationPageBounds(annotation)
   let shiftX = 0
   let shiftY = 0
@@ -244,11 +229,7 @@ export function translateAnnotation(
   return clampAnnotationToPage(moved, page)
 }
 
-export function inverseRotatePoint(
-  point: Point,
-  pivot: Point,
-  degrees: number,
-): Point {
+export function inverseRotatePoint(point: Point, pivot: Point, degrees: number): Point {
   if (degrees === 0) {
     return point
   }
@@ -304,12 +285,7 @@ function resizeRectangle(
   local: Point,
   page: PdfPageDimensions,
 ): Annotation {
-  if (
-    handle !== 'nw' &&
-    handle !== 'ne' &&
-    handle !== 'sw' &&
-    handle !== 'se'
-  ) {
+  if (handle !== 'nw' && handle !== 'ne' && handle !== 'sw' && handle !== 'se') {
     return annotation
   }
 
@@ -390,11 +366,7 @@ function resizeText(
   }
   const block = textBlockSize(annotation.text, annotation.fontSize)
   const base = Math.max(block.width, block.height, MIN_SHAPE_SIZE)
-  const target = Math.max(
-    local.x - annotation.x,
-    local.y - annotation.y,
-    MIN_SHAPE_SIZE,
-  )
+  const target = Math.max(local.x - annotation.x, local.y - annotation.y, MIN_SHAPE_SIZE)
   const scale = target / base
   const fontSize = clampFontSize(annotation.fontSize * scale)
   const pivot = getAnnotationPivot(annotation)
@@ -412,10 +384,7 @@ function resizeText(
 function fitsOnPage(annotation: Annotation, page: PdfPageDimensions): boolean {
   const bounds = getAnnotationPageBounds(annotation)
   return (
-    bounds.minX >= 0 &&
-    bounds.minY >= 0 &&
-    bounds.maxX <= page.width &&
-    bounds.maxY <= page.height
+    bounds.minX >= 0 && bounds.minY >= 0 && bounds.maxX <= page.width && bounds.maxY <= page.height
   )
 }
 
@@ -437,10 +406,7 @@ export function rotateAnnotation(
   const targetRotation = startRotation + (currentAngle - startAngle)
 
   let rotation = targetRotation
-  let candidate = clampAnnotationToPage(
-    { ...annotation, rotation },
-    page,
-  )
+  let candidate = clampAnnotationToPage({ ...annotation, rotation }, page)
   if (fitsOnPage(candidate, page)) {
     return candidate
   }
@@ -454,8 +420,5 @@ export function rotateAnnotation(
     }
   }
 
-  return clampAnnotationToPage(
-    { ...annotation, rotation: startRotation },
-    page,
-  )
+  return clampAnnotationToPage({ ...annotation, rotation: startRotation }, page)
 }

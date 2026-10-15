@@ -32,35 +32,16 @@ export function clientToPagePoint(
   bounds: ClientBounds,
   page: PdfPageDimensions,
 ): Point | null {
-  if (
-    bounds.width <= 0 ||
-    bounds.height <= 0 ||
-    page.width <= 0 ||
-    page.height <= 0
-  ) {
+  if (bounds.width <= 0 || bounds.height <= 0 || page.width <= 0 || page.height <= 0) {
     return null
   }
 
   return {
-    x: clamp(
-      ((clientX - bounds.left) / bounds.width) * page.width,
-      0,
-      page.width,
-    ),
-    y: clamp(
-      ((clientY - bounds.top) / bounds.height) * page.height,
-      0,
-      page.height,
-    ),
+    x: clamp(((clientX - bounds.left) / bounds.width) * page.width, 0, page.width),
+    y: clamp(((clientY - bounds.top) / bounds.height) * page.height, 0, page.height),
   }
 }
 
-export function pagesMatch(
-  left: PdfPageDimensions,
-  right: PdfPageDimensions,
-): boolean {
-  return (
-    Math.abs(left.width - right.width) < 0.01 &&
-    Math.abs(left.height - right.height) < 0.01
-  )
+export function pagesMatch(left: PdfPageDimensions, right: PdfPageDimensions): boolean {
+  return Math.abs(left.width - right.width) < 0.01 && Math.abs(left.height - right.height) < 0.01
 }

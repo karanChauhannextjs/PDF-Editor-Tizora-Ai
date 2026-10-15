@@ -32,9 +32,7 @@ export function PdfViewer({
         className="relative w-full bg-white shadow-sm ring-1 ring-border"
         style={{ aspectRatio: `${page.width} / ${page.height}` }}
       >
-        {showCanvas ? (
-          <PdfPageCanvas canvasRef={canvasRef} pageLabel={pageLabel} />
-        ) : null}
+        {showCanvas ? <PdfPageCanvas canvasRef={canvasRef} pageLabel={pageLabel} /> : null}
         {children}
       </div>
       <p className="mt-2 text-center text-xs text-muted-foreground">
@@ -54,10 +52,6 @@ const PdfPageCanvas = memo(function PdfPageCanvas({
   pageLabel: string
 }) {
   return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 h-full w-full"
-      aria-label={pageLabel}
-    />
+    <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-label={pageLabel} />
   )
 })

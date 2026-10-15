@@ -1,9 +1,7 @@
 import type { Annotation, TextFormat } from '@/types/annotation'
 import { DEFAULT_TEXT_FORMAT } from '@/types/annotation'
 
-export const FONT_SIZE_OPTIONS = [
-  4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 32, 40,
-] as const
+export const FONT_SIZE_OPTIONS = [4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 32, 40] as const
 
 export const MIN_FONT_SIZE = FONT_SIZE_OPTIONS[0]
 export const MAX_FONT_SIZE = FONT_SIZE_OPTIONS[FONT_SIZE_OPTIONS.length - 1]
@@ -42,9 +40,7 @@ export function isValidHexColor(value: string): boolean {
   return HEX_COLOR.test(value)
 }
 
-export function textFormatFromAnnotation(
-  annotation: TextFormat | undefined,
-): TextFormat {
+export function textFormatFromAnnotation(annotation: TextFormat | undefined): TextFormat {
   if (!annotation) {
     return DEFAULT_TEXT_FORMAT
   }

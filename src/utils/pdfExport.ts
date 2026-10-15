@@ -12,10 +12,7 @@ import type { Annotation } from '@/types/annotation'
 import type { AnnotationRootState } from '@/utils/annotationRootReducer'
 import { textBlockSize } from '@/utils/annotationGeometry'
 import { normalizeHexColor } from '@/utils/annotationStyle'
-import {
-  annotationRotation,
-  getAnnotationPivot,
-} from '@/utils/annotationTransform'
+import { annotationRotation, getAnnotationPivot } from '@/utils/annotationTransform'
 import { downloadBlob } from '@/utils/annotationPersistence'
 
 type PageScale = {
@@ -47,8 +44,7 @@ export async function buildAnnotatedPdfBytes(
     }
 
     const { width, height } = page.getSize()
-    const storedDimensions =
-      state.pageDimensions[pageIndex] ?? { width, height }
+    const storedDimensions = state.pageDimensions[pageIndex] ?? { width, height }
     const scale: PageScale = {
       scaleX: width / storedDimensions.width,
       scaleY: height / storedDimensions.height,
@@ -81,9 +77,7 @@ export function downloadAnnotatedPdf(
 export function annotatedPdfFileName(sourceName: string): string {
   const stamp = Date.now()
   const trimmed = sourceName.trim() || 'document.pdf'
-  const base = trimmed.toLowerCase().endsWith('.pdf')
-    ? trimmed.slice(0, -4)
-    : trimmed
+  const base = trimmed.toLowerCase().endsWith('.pdf') ? trimmed.slice(0, -4) : trimmed
   return `${base}-annotated-${stamp}.pdf`
 }
 
@@ -111,11 +105,7 @@ function drawAnnotationOnPage(
       case 'rectangle':
         page.drawRectangle({
           x: annotation.x * scale.scaleX,
-          y: toPdfY(
-            annotation.y + annotation.height,
-            pageHeight,
-            scale.scaleY,
-          ),
+          y: toPdfY(annotation.y + annotation.height, pageHeight, scale.scaleY),
           width: annotation.width * scale.scaleX,
           height: annotation.height * scale.scaleY,
           borderColor: hexToRgb(annotation.stroke),
@@ -123,8 +113,7 @@ function drawAnnotationOnPage(
         })
         return
       case 'circle': {
-        const radius =
-          annotation.radius * ((scale.scaleX + scale.scaleY) / 2)
+        const radius = annotation.radius * ((scale.scaleX + scale.scaleY) / 2)
         const cx = annotation.cx * scale.scaleX
         const cyTop = annotation.cy * scale.scaleY
         page.drawEllipse({
@@ -148,8 +137,7 @@ function drawAnnotationOnPage(
             y: pageHeight - annotation.end.y * scale.scaleY,
           },
           color: hexToRgb(annotation.stroke),
-          thickness:
-            annotation.strokeWidth * ((scale.scaleX + scale.scaleY) / 2),
+          thickness: annotation.strokeWidth * ((scale.scaleX + scale.scaleY) / 2),
         })
         return
       case 'text':
@@ -190,8 +178,7 @@ function drawTextAnnotation(
 
   if (annotation.underline && lines.length > 0) {
     const block = textBlockSize(annotation.text, annotation.fontSize)
-    const underlineY =
-      pageHeight - (annotation.y + block.height) * scale.scaleY
+    const underlineY = pageHeight - (annotation.y + block.height) * scale.scaleY
     page.drawLine({
       start: { x, y: underlineY },
       end: {

@@ -1,19 +1,13 @@
 import type { PointerEvent, ReactNode } from 'react'
 import type { Annotation } from '@/types/annotation'
 import { textBlockSize } from '@/utils/annotationGeometry'
-import {
-  annotationRotation,
-  getAnnotationPivot,
-} from '@/utils/annotationTransform'
+import { annotationRotation, getAnnotationPivot } from '@/utils/annotationTransform'
 
 type AnnotationItemProps = {
   annotation: Annotation
   showSelectionOutline: boolean
   interactive: boolean
-  onPointerDown: (
-    event: PointerEvent<SVGGElement>,
-    annotation: Annotation,
-  ) => void
+  onPointerDown: (event: PointerEvent<SVGGElement>, annotation: Annotation) => void
   onEditText: (annotation: Annotation) => void
 }
 
@@ -39,17 +33,10 @@ export function AnnotationItem({
 
   const pivot = getAnnotationPivot(annotation)
   const rotation = annotationRotation(annotation)
-  const rotationTransform =
-    rotation === 0
-      ? undefined
-      : `rotate(${rotation} ${pivot.x} ${pivot.y})`
+  const rotationTransform = rotation === 0 ? undefined : `rotate(${rotation} ${pivot.x} ${pivot.y})`
 
   const wrap = (content: ReactNode) => (
-    <g
-      data-annotation-id={annotation.id}
-      transform={rotationTransform}
-      {...interaction}
-    >
+    <g data-annotation-id={annotation.id} transform={rotationTransform} {...interaction}>
       {content}
     </g>
   )

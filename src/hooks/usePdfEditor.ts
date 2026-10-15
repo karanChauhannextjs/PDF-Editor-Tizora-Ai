@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import type {
-  Annotation,
-  AnnotationTool,
-  Point,
-  TextAnnotation,
-} from '@/types/annotation'
+import type { Annotation, AnnotationTool, Point, TextAnnotation } from '@/types/annotation'
 import {
   DEFAULT_STROKE,
   DEFAULT_STROKE_WIDTH,
@@ -22,10 +17,7 @@ import { isEditableKeyboardTarget } from '@/components/editor/pdfEditor/utils'
 import { useAnnotations } from '@/hooks/useAnnotations'
 import { usePdfDocument } from '@/hooks/usePdfDocument'
 import { useEditorSessionStore } from '@/stores/editorSessionStore'
-import {
-  isTextAnnotation,
-  scaleAnnotationsToPage,
-} from '@/utils/annotationGeometry'
+import { isTextAnnotation, scaleAnnotationsToPage } from '@/utils/annotationGeometry'
 import {
   buildAnnotationDocumentFromRoot,
   downloadAnnotationDocument,
@@ -58,9 +50,7 @@ export function usePdfEditor({ initialPage }: PdfEditorOptions = {}) {
   } = annotationsApi
 
   const [tool, setTool] = useState<AnnotationTool | null>(null)
-  const [blankPage, setBlankPage] = useState<PdfPageDimensions | null>(
-    initialPage ?? null,
-  )
+  const [blankPage, setBlankPage] = useState<PdfPageDimensions | null>(initialPage ?? null)
   const [textDraft, setTextDraft] = useState<TextDraft | null>(null)
   const [appError, setAppError] = useState<string | null>(null)
   const [pending, setPending] = useState<PendingAction | null>(null)
@@ -76,21 +66,16 @@ export function usePdfEditor({ initialPage }: PdfEditorOptions = {}) {
   const storedBlankPage = useEditorSessionStore((state) => state.blankPage)
   const setPdfSession = useEditorSessionStore((state) => state.setPdfSession)
   const setStoredBlankPage = useEditorSessionStore((state) => state.setBlankPage)
-  const clearPersistedSession = useEditorSessionStore(
-    (state) => state.clearPersistedSession,
-  )
+  const clearPersistedSession = useEditorSessionStore((state) => state.clearPersistedSession)
 
   const sessionRestoredRef = useRef(false)
   const { loadFromBytes } = pdf
 
-  const isRestoringPdf =
-    pdfSession !== null && pdf.page === null && !pdfRestoreFailed
+  const isRestoringPdf = pdfSession !== null && pdf.page === null && !pdfRestoreFailed
 
-  const page =
-    pdf.page ?? (pdfSession ? null : blankPage ?? storedBlankPage)
+  const page = pdf.page ?? (pdfSession ? null : (blankPage ?? storedBlankPage))
   const activeTool: AnnotationTool | null = page ? (tool ?? 'select') : null
-  const selected =
-    annotations.find((annotation) => annotation.id === selectedId) ?? null
+  const selected = annotations.find((annotation) => annotation.id === selectedId) ?? null
   const banner = appError ?? pdf.error
 
   useEffect(() => {
@@ -122,9 +107,7 @@ export function usePdfEditor({ initialPage }: PdfEditorOptions = {}) {
   const deleteAnnotation = useCallback(
     (id: string) => {
       dispatch({ type: 'delete', id })
-      setTextDraft((draft) =>
-        draft?.mode === 'edit' && draft.id === id ? null : draft,
-      )
+      setTextDraft((draft) => (draft?.mode === 'edit' && draft.id === id ? null : draft))
     },
     [dispatch],
   )
@@ -219,13 +202,8 @@ export function usePdfEditor({ initialPage }: PdfEditorOptions = {}) {
       let count = 0
       for (const [pageIndex, bundle] of Object.entries(parsed.import.pages)) {
         const index = Number(pageIndex)
-        const target =
-          pdf.currentPageIndex === index && pdf.page ? pdf.page : bundle.page
-        const scaled = scaleAnnotationsToPage(
-          bundle.annotations,
-          bundle.page,
-          target,
-        )
+        const target = pdf.currentPageIndex === index && pdf.page ? pdf.page : bundle.page
+        const scaled = scaleAnnotationsToPage(bundle.annotations, bundle.page, target)
         pages[index] = scaled
         pageDimensions[index] = target
         count += scaled.length
@@ -240,11 +218,7 @@ export function usePdfEditor({ initialPage }: PdfEditorOptions = {}) {
     }
 
     const target = pdf.page ?? parsed.import.page
-    const scaled = scaleAnnotationsToPage(
-      parsed.import.annotations,
-      parsed.import.page,
-      target,
-    )
+    const scaled = scaleAnnotationsToPage(parsed.import.annotations, parsed.import.page, target)
     replacePage(annotationPageIndex, target, scaled)
     if (!pdf.page) {
       setBlankPage(parsed.import.page)
@@ -257,9 +231,7 @@ export function usePdfEditor({ initialPage }: PdfEditorOptions = {}) {
       ? ''
       : ' Coordinates were scaled to the current page.'
     const count = scaled.length
-    toast.success(
-      `Imported ${count} annotation${count === 1 ? '' : 's'}.${scaledNote}`,
-    )
+    toast.success(`Imported ${count} annotation${count === 1 ? '' : 's'}.${scaledNote}`)
   }
 
   const handleImportAnnotations = async (file: File) => {
@@ -328,9 +300,7 @@ export function usePdfEditor({ initialPage }: PdfEditorOptions = {}) {
       }
       downloadAnnotationDocument(document)
       setAppError(null)
-      toast.success(
-        'Exported annotations as JSON. They are not embedded in the PDF.',
-      )
+      toast.success('Exported annotations as JSON. They are not embedded in the PDF.')
     } catch (error) {
       console.error('Failed to export annotations', error)
       setAppError('The annotation file could not be exported.')
@@ -440,8 +410,7 @@ export function usePdfEditor({ initialPage }: PdfEditorOptions = {}) {
     })
   }
 
-  const canResetAnnotations =
-    page !== null && (totalAnnotationCount > 0 || canUndo || canRedo)
+  const canResetAnnotations = page !== null && (totalAnnotationCount > 0 || canUndo || canRedo)
   const canRemovePdf = page !== null
 
   return {

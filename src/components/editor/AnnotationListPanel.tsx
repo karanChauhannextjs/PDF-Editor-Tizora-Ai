@@ -1,12 +1,4 @@
-import {
-  ArrowDown,
-  ArrowUp,
-  Circle,
-  Minus,
-  Square,
-  Trash2,
-  Type,
-} from 'lucide-react'
+import { ArrowDown, ArrowUp, Circle, Minus, Square, Trash2, Type } from 'lucide-react'
 import type { Annotation } from '@/types/annotation'
 import { annotationKindLabel } from '@/utils/annotationGeometry'
 import { Button } from '@/components/ui/button'
@@ -35,9 +27,7 @@ export function AnnotationListPanel({
     >
       <div className="border-b px-3 py-2">
         <h2 className="text-sm font-medium">Layers</h2>
-        <p className="text-xs text-muted-foreground">
-          Top items draw above lower ones.
-        </p>
+        <p className="text-xs text-muted-foreground">Top items draw above lower ones.</p>
       </div>
       <ul className="min-h-0 flex-1 overflow-y-auto p-2">
         {ordered.length === 0 ? (
@@ -56,9 +46,7 @@ export function AnnotationListPanel({
                   role="button"
                   tabIndex={0}
                   className={`flex cursor-pointer items-center gap-1 rounded-md border px-2 py-1.5 text-left transition-colors hover:bg-muted/70 ${
-                    isSelected
-                      ? 'border-primary bg-primary/5'
-                      : 'border-transparent bg-muted/40'
+                    isSelected ? 'border-primary bg-primary/5' : 'border-transparent bg-muted/40'
                   }`}
                   onClick={() => onSelect(annotation.id)}
                   onKeyDown={(event) => {

@@ -7,11 +7,7 @@ import type {
   RectangleAnnotation,
   TextAnnotation,
 } from '@/types/annotation'
-import {
-  DEFAULT_STROKE,
-  DEFAULT_STROKE_WIDTH,
-  MIN_SHAPE_SIZE,
-} from '@/types/annotation'
+import { DEFAULT_STROKE, DEFAULT_STROKE_WIDTH, MIN_SHAPE_SIZE } from '@/types/annotation'
 import type { PdfPageDimensions } from '@/types/pdf'
 import { clampFontSize } from '@/utils/annotationStyle'
 import { clamp } from '@/utils/coordinates'
@@ -35,11 +31,7 @@ export function rectangleFromDrag(start: Point, end: Point): ShapeDraft {
  * The drag segment is the circle's diameter. The center is the midpoint and
  * the radius is half the distance, then the circle is pulled inside the page.
  */
-export function circleFromDrag(
-  start: Point,
-  end: Point,
-  page: PdfPageDimensions,
-): ShapeDraft {
+export function circleFromDrag(start: Point, end: Point, page: PdfPageDimensions): ShapeDraft {
   const cx = (start.x + end.x) / 2
   const cy = (start.y + end.y) / 2
   const radius = Math.hypot(end.x - start.x, end.y - start.y) / 2
@@ -92,10 +84,7 @@ export function isSignificantShape(draft: ShapeDraft): boolean {
     case 'circle':
       return draft.radius * 2 >= MIN_SHAPE_SIZE
     case 'line':
-      return (
-        Math.hypot(draft.end.x - draft.start.x, draft.end.y - draft.start.y) >=
-        MIN_SHAPE_SIZE
-      )
+      return Math.hypot(draft.end.x - draft.start.x, draft.end.y - draft.start.y) >= MIN_SHAPE_SIZE
     default: {
       const unreachable: never = draft
       return unreachable
@@ -187,11 +176,7 @@ function scaleAnnotation(
       }
     }
     case 'circle': {
-      const radius = clamp(
-        annotation.radius * uniform,
-        0,
-        Math.min(page.width, page.height) / 2,
-      )
+      const radius = clamp(annotation.radius * uniform, 0, Math.min(page.width, page.height) / 2)
       return {
         ...annotation,
         radius,
@@ -244,8 +229,6 @@ export function annotationKindLabel(annotation: Annotation): string {
   }
 }
 
-export function isTextAnnotation(
-  annotation: Annotation,
-): annotation is TextAnnotation {
+export function isTextAnnotation(annotation: Annotation): annotation is TextAnnotation {
   return annotation.type === 'text'
 }

@@ -5,10 +5,7 @@ import {
   ANNOTATION_DOCUMENT_VERSION_MULTI,
   type AnnotationDocumentV1,
 } from '@/types/persistence'
-import {
-  parseAnnotationDocument,
-  serializeAnnotationDocument,
-} from '@/utils/annotationPersistence'
+import { parseAnnotationDocument, serializeAnnotationDocument } from '@/utils/annotationPersistence'
 
 const documentV1 = {
   version: ANNOTATION_DOCUMENT_VERSION,
@@ -58,9 +55,12 @@ describe('annotation persistence', () => {
       return
     }
     expect(parsed.import.annotations).toHaveLength(4)
-    expect(parsed.import.annotations.map((item) => item.type).sort()).toEqual(
-      ['circle', 'line', 'rectangle', 'text'],
-    )
+    expect(parsed.import.annotations.map((item) => item.type).sort()).toEqual([
+      'circle',
+      'line',
+      'rectangle',
+      'text',
+    ])
   })
 
   it('imports multi-page version 2 documents', () => {

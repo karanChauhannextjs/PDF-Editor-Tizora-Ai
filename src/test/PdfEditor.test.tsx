@@ -44,9 +44,7 @@ describe('PdfEditor', () => {
     await user.type(field, 'Hello note')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
-    expect(
-      within(screen.getByTestId('annotation-svg')).getByText('Hello note'),
-    ).toBeInTheDocument()
+    expect(within(screen.getByTestId('annotation-svg')).getByText('Hello note')).toBeInTheDocument()
   })
 
   it('does not delete an annotation while text is being edited', async () => {
@@ -60,22 +58,16 @@ describe('PdfEditor', () => {
       clientX: 40,
       clientY: 50,
     })
-    await user.type(
-      await screen.findByLabelText('Annotation text'),
-      'Hello note',
-    )
+    await user.type(await screen.findByLabelText('Annotation text'), 'Hello note')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
     await user.click(screen.getByRole('button', { name: 'Select' }))
-    fireEvent.pointerDown(
-      within(screen.getByTestId('annotation-svg')).getByText('Hello note'),
-      {
-        button: 0,
-        pointerId: 1,
-        clientX: 40,
-        clientY: 50,
-      },
-    )
+    fireEvent.pointerDown(within(screen.getByTestId('annotation-svg')).getByText('Hello note'), {
+      button: 0,
+      pointerId: 1,
+      clientX: 40,
+      clientY: 50,
+    })
     await user.click(screen.getByRole('button', { name: 'Edit text' }))
 
     const field = screen.getByLabelText('Annotation text')
@@ -83,9 +75,7 @@ describe('PdfEditor', () => {
     expect(screen.getByLabelText('Annotation text')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(
-      within(screen.getByTestId('annotation-svg')).getByText('Hello note'),
-    ).toBeInTheDocument()
+    expect(within(screen.getByTestId('annotation-svg')).getByText('Hello note')).toBeInTheDocument()
   })
 
   it('undoes the last annotation change from the toolbar', async () => {
@@ -99,15 +89,10 @@ describe('PdfEditor', () => {
       clientX: 40,
       clientY: 50,
     })
-    await user.type(
-      await screen.findByLabelText('Annotation text'),
-      'Undo me',
-    )
+    await user.type(await screen.findByLabelText('Annotation text'), 'Undo me')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
-    expect(
-      within(screen.getByTestId('annotation-svg')).getByText('Undo me'),
-    ).toBeInTheDocument()
+    expect(within(screen.getByTestId('annotation-svg')).getByText('Undo me')).toBeInTheDocument()
 
     const undoButton = screen.getByRole('button', { name: 'Undo' })
     expect(undoButton).toBeEnabled()

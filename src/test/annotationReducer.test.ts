@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Annotation } from '@/types/annotation'
-import {
-  annotationReducer,
-  initialAnnotationState,
-} from '@/utils/annotationReducer'
+import { annotationReducer, initialAnnotationState } from '@/utils/annotationReducer'
 
 const page = { width: 500, height: 500 }
 

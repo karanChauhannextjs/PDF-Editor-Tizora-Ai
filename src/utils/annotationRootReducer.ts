@@ -108,40 +108,27 @@ export function annotationRootReducer(
   }
 }
 
-function stripPageIndex(
-  action: PageAction & { pageIndex: number },
-): PageAction {
+function stripPageIndex(action: PageAction & { pageIndex: number }): PageAction {
   const { pageIndex, ...pageAction } = action
   void pageIndex
   return pageAction as PageAction
 }
 
-export function cloneAnnotationRootState(
-  state: AnnotationRootState,
-): AnnotationRootState {
+export function cloneAnnotationRootState(state: AnnotationRootState): AnnotationRootState {
   if (typeof structuredClone === 'function') {
     return structuredClone(state)
   }
   return JSON.parse(JSON.stringify(state)) as AnnotationRootState
 }
 
-export function rootStatesEqual(
-  left: AnnotationRootState,
-  right: AnnotationRootState,
-): boolean {
+export function rootStatesEqual(left: AnnotationRootState, right: AnnotationRootState): boolean {
   return JSON.stringify(left) === JSON.stringify(right)
 }
 
-export function getPageSlice(
-  state: AnnotationRootState,
-  pageIndex: number,
-): AnnotationState {
+export function getPageSlice(state: AnnotationRootState, pageIndex: number): AnnotationState {
   return state.pages[pageIndex] ?? { annotations: [], selectedId: null }
 }
 
 export function countAnnotations(state: AnnotationRootState): number {
-  return Object.values(state.pages).reduce(
-    (total, slice) => total + slice.annotations.length,
-    0,
-  )
+  return Object.values(state.pages).reduce((total, slice) => total + slice.annotations.length, 0)
 }

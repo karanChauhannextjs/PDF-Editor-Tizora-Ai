@@ -86,13 +86,8 @@ function redo(history: HistoryState): HistoryState {
   }
 }
 
-function strokeOf(
-  state: AnnotationRootState,
-  id: string,
-): string | undefined {
-  const annotation = state.pages[PAGE_INDEX]?.annotations.find(
-    (entry) => entry.id === id,
-  )
+function strokeOf(state: AnnotationRootState, id: string): string | undefined {
+  const annotation = state.pages[PAGE_INDEX]?.annotations.find((entry) => entry.id === id)
   if (!annotation || annotation.type === 'text') {
     return undefined
   }

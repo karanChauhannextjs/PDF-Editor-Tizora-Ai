@@ -6,8 +6,7 @@ export function validatePdfFile(file: File): FileValidationResult {
   }
 
   const isPdfName = file.name.toLowerCase().endsWith('.pdf')
-  const isPdfType =
-    file.type === 'application/pdf' || file.type === 'application/x-pdf'
+  const isPdfType = file.type === 'application/pdf' || file.type === 'application/x-pdf'
   if (!isPdfName && !isPdfType) {
     return {
       ok: false,
@@ -25,9 +24,7 @@ export function validateJsonFile(file: File): FileValidationResult {
 
   const isJsonName = file.name.toLowerCase().endsWith('.json')
   const isJsonType =
-    file.type === 'application/json' ||
-    file.type === 'text/json' ||
-    file.type === ''
+    file.type === 'application/json' || file.type === 'text/json' || file.type === ''
   if (!isJsonName && !isJsonType) {
     return {
       ok: false,

@@ -32,9 +32,7 @@ export function PdfEditorPendingDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {pending?.kind === 'import'
-              ? 'Replace annotations?'
-              : 'Open a different PDF?'}
+            {pending?.kind === 'import' ? 'Replace annotations?' : 'Open a different PDF?'}
           </DialogTitle>
           <DialogDescription>
             {pending?.kind === 'import'

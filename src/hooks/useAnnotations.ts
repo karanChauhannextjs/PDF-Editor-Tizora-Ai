@@ -21,12 +21,8 @@ function recordsHistory(action: AnnotationRootAction): boolean {
 
 export function useAnnotations(currentPageIndex: number) {
   const history = useEditorSessionStore((state) => state.annotationHistory)
-  const setAnnotationHistory = useEditorSessionStore(
-    (state) => state.setAnnotationHistory,
-  )
-  const resetAnnotationsInStore = useEditorSessionStore(
-    (state) => state.resetAnnotations,
-  )
+  const setAnnotationHistory = useEditorSessionStore((state) => state.setAnnotationHistory)
+  const resetAnnotationsInStore = useEditorSessionStore((state) => state.resetAnnotations)
   const transactionStartRef = useRef<AnnotationRootState | null>(null)
 
   const present = history.present
@@ -42,15 +38,12 @@ export function useAnnotations(currentPageIndex: number) {
           return current
         }
         const inTransaction = transactionStartRef.current !== null
-        const shouldRecord =
-          recordsHistory(action) && !options?.skipHistory && !inTransaction
+        const shouldRecord = recordsHistory(action) && !options?.skipHistory && !inTransaction
         if (!shouldRecord) {
           return { ...current, present: nextPresent }
         }
         return {
-          past: [...current.past, cloneAnnotationRootState(current.present)].slice(
-            -HISTORY_LIMIT,
-          ),
+          past: [...current.past, cloneAnnotationRootState(current.present)].slice(-HISTORY_LIMIT),
           present: nextPresent,
           future: [],
         }
@@ -130,11 +123,7 @@ export function useAnnotations(currentPageIndex: number) {
   }, [resetAnnotationsInStore])
 
   const replacePage = useCallback(
-    (
-      pageIndex: number,
-      page: PdfPageDimensions,
-      annotations: Annotation[],
-    ) => {
+    (pageIndex: number, page: PdfPageDimensions, annotations: Annotation[]) => {
       applyAction({
         type: 'replacePage',
         pageIndex,
@@ -146,10 +135,7 @@ export function useAnnotations(currentPageIndex: number) {
   )
 
   const replaceDocument = useCallback(
-    (
-      pages: Record<number, Annotation[]>,
-      pageDimensions: Record<number, PdfPageDimensions>,
-    ) => {
+    (pages: Record<number, Annotation[]>, pageDimensions: Record<number, PdfPageDimensions>) => {
       applyAction({
         type: 'replaceDocument',
         pages,
@@ -161,10 +147,7 @@ export function useAnnotations(currentPageIndex: number) {
 
   const setPageDimensions = useCallback(
     (pageIndex: number, page: PdfPageDimensions) => {
-      applyAction(
-        { type: 'setPageDimensions', pageIndex, page },
-        { skipHistory: true },
-      )
+      applyAction({ type: 'setPageDimensions', pageIndex, page }, { skipHistory: true })
     },
     [applyAction],
   )

@@ -36,8 +36,7 @@ export function PageControls({
         Previous
       </Button>
       <p className="min-w-[7rem] text-center text-sm text-muted-foreground">
-        Page{' '}
-        <span className="font-medium text-foreground">{currentPage}</span> of{' '}
+        Page <span className="font-medium text-foreground">{currentPage}</span> of{' '}
         <span className="font-medium text-foreground">{pageCount}</span>
       </p>
       <Button

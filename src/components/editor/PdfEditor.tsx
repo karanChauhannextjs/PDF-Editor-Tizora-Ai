@@ -18,12 +18,7 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
   }
 
   if (editor.isRestoringPdf) {
-    return (
-      <SessionLoader
-        title="Opening your PDF…"
-        subtitle={editor.pdfSession?.fileName}
-      />
-    )
+    return <SessionLoader title="Opening your PDF…" subtitle={editor.pdfSession?.fileName} />
   }
 
   return (

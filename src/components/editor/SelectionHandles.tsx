@@ -23,18 +23,12 @@ type SelectionHandlesProps = {
   ) => void
 }
 
-export function SelectionHandles({
-  annotation,
-  onHandlePointerDown,
-}: SelectionHandlesProps) {
+export function SelectionHandles({ annotation, onHandlePointerDown }: SelectionHandlesProps) {
   const pivot = getAnnotationPivot(annotation)
   const rotation = annotationRotation(annotation)
   const rotateAnchor = getRotateHandleAnchor(annotation)
   const rotatePoint = rotateAnchor ? getRotateHandlePoint(rotateAnchor) : null
-  const transform =
-    rotation === 0
-      ? undefined
-      : `rotate(${rotation} ${pivot.x} ${pivot.y})`
+  const transform = rotation === 0 ? undefined : `rotate(${rotation} ${pivot.x} ${pivot.y})`
 
   const handleProps = (handle: ResizeHandle) => ({
     r: HANDLE_RADIUS,
@@ -53,16 +47,8 @@ export function SelectionHandles({
       {annotation.type === 'rectangle' ? (
         <>
           <Handle cx={annotation.x} cy={annotation.y} {...handleProps('nw')} />
-          <Handle
-            cx={annotation.x + annotation.width}
-            cy={annotation.y}
-            {...handleProps('ne')}
-          />
-          <Handle
-            cx={annotation.x}
-            cy={annotation.y + annotation.height}
-            {...handleProps('sw')}
-          />
+          <Handle cx={annotation.x + annotation.width} cy={annotation.y} {...handleProps('ne')} />
+          <Handle cx={annotation.x} cy={annotation.y + annotation.height} {...handleProps('sw')} />
           <Handle
             cx={annotation.x + annotation.width}
             cy={annotation.y + annotation.height}
@@ -79,30 +65,22 @@ export function SelectionHandles({
       ) : null}
       {annotation.type === 'line' ? (
         <>
-          <Handle
-            cx={annotation.start.x}
-            cy={annotation.start.y}
-            {...handleProps('start')}
-          />
-          <Handle
-            cx={annotation.end.x}
-            cy={annotation.end.y}
-            {...handleProps('end')}
-          />
+          <Handle cx={annotation.start.x} cy={annotation.start.y} {...handleProps('start')} />
+          <Handle cx={annotation.end.x} cy={annotation.end.y} {...handleProps('end')} />
         </>
       ) : null}
-      {annotation.type === 'text' ? (
-        (() => {
-          const block = textBlockSize(annotation.text, annotation.fontSize)
-          return (
-            <Handle
-              cx={annotation.x + block.width + 2}
-              cy={annotation.y + block.height + 2}
-              {...handleProps('text-scale')}
-            />
-          )
-        })()
-      ) : null}
+      {annotation.type === 'text'
+        ? (() => {
+            const block = textBlockSize(annotation.text, annotation.fontSize)
+            return (
+              <Handle
+                cx={annotation.x + block.width + 2}
+                cy={annotation.y + block.height + 2}
+                {...handleProps('text-scale')}
+              />
+            )
+          })()
+        : null}
       {rotateAnchor && rotatePoint ? (
         <RotateHandleControl
           anchor={rotateAnchor}

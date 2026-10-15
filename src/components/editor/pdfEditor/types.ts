@@ -5,8 +5,7 @@ export type TextDraft =
   | { mode: 'edit'; id: string; x: number; y: number; text: string }
 
 export type PendingAction =
-  | { kind: 'open-pdf'; file: File }
-  | { kind: 'import'; documentJson: string }
+  { kind: 'open-pdf'; file: File } | { kind: 'import'; documentJson: string }
 
 export type PdfEditorOptions = {
   initialPage?: PdfPageDimensions

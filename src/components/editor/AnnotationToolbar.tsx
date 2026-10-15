@@ -1,23 +1,10 @@
 import type { ReactNode } from 'react'
-import {
-  Circle,
-  Minus,
-  MousePointer2,
-  Redo2,
-  Square,
-  Trash2,
-  Type,
-  Undo2,
-} from 'lucide-react'
+import { Circle, Minus, MousePointer2, Redo2, Square, Trash2, Type, Undo2 } from 'lucide-react'
 import type { AnnotationTool } from '@/types/annotation'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Separator } from '@/components/ui/separator'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 type AnnotationToolbarProps = {
   tool: AnnotationTool | null
@@ -52,12 +39,7 @@ function AnnotationToolbar({
       role="toolbar"
       aria-label="Annotation tools"
     >
-      <HistoryIconButton
-        label="Undo"
-        hint="Undo (Ctrl+Z)"
-        disabled={!canUndo}
-        onClick={onUndo}
-      >
+      <HistoryIconButton label="Undo" hint="Undo (Ctrl+Z)" disabled={!canUndo} onClick={onUndo}>
         <Undo2 className="size-4" />
       </HistoryIconButton>
       <HistoryIconButton
@@ -205,8 +187,7 @@ function ToolButton({
 function toolButtonClass(pressed: boolean) {
   return cn(
     'h-9 gap-2 rounded-xl px-3 text-sm [&_svg]:text-current',
-    !pressed &&
-      'border-border bg-background text-foreground hover:bg-muted/70',
+    !pressed && 'border-border bg-background text-foreground hover:bg-muted/70',
   )
 }
 

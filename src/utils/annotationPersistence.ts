@@ -13,9 +13,7 @@ import { MAX_FONT_SIZE, MIN_FONT_SIZE } from '@/utils/annotationStyle'
 const HEX_COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
 const ANNOTATION_TYPES = ['rectangle', 'circle', 'line', 'text'] as const
 
-export function serializeAnnotationDocument(
-  annotationDocument: AnnotationDocument,
-): string {
+export function serializeAnnotationDocument(annotationDocument: AnnotationDocument): string {
   return JSON.stringify(annotationDocument, null, 2)
 }
 
@@ -49,9 +47,7 @@ export function validateAnnotationDocument(value: unknown): ValidationResult {
   }
 }
 
-function validateSinglePageDocument(
-  value: Record<string, unknown>,
-): ValidationResult {
+function validateSinglePageDocument(value: Record<string, unknown>): ValidationResult {
   const page = readPage(value.page)
   if (!page) {
     return {
@@ -79,19 +75,14 @@ function validateSinglePageDocument(
   }
 }
 
-function validateMultiPageDocument(
-  value: Record<string, unknown>,
-): ValidationResult {
+function validateMultiPageDocument(value: Record<string, unknown>): ValidationResult {
   if (!Array.isArray(value.pages) || value.pages.length === 0) {
     return {
       ok: false,
       message: 'The annotation file does not contain any pages.',
     }
   }
-  const pages: Record<
-    number,
-    { page: PdfPageDimensions; annotations: Annotation[] }
-  > = {}
+  const pages: Record<number, { page: PdfPageDimensions; annotations: Annotation[] }> = {}
   const seenIds = new Set<string>()
   for (const entry of value.pages) {
     if (!isRecord(entry)) {
@@ -134,9 +125,7 @@ function validateMultiPageDocument(
 function readAnnotationList(
   entries: unknown[],
   seenIds = new Set<string>(),
-):
-  | { ok: true; annotations: Annotation[] }
-  | { ok: false; message: string } {
+): { ok: true; annotations: Annotation[] } | { ok: false; message: string } {
   const annotations: Annotation[] = []
   for (const entry of entries) {
     const annotation = readAnnotation(entry)
@@ -158,9 +147,7 @@ function readAnnotationList(
   return { ok: true, annotations }
 }
 
-export function buildAnnotationDocumentFromRoot(
-  state: AnnotationRootState,
-): AnnotationDocumentV2 {
+export function buildAnnotationDocumentFromRoot(state: AnnotationRootState): AnnotationDocumentV2 {
   const pageIndexes = new Set<number>([
     ...Object.keys(state.pages).map(Number),
     ...Object.keys(state.pageDimensions).map(Number),
@@ -220,11 +207,7 @@ function unsupportedOrInvalidMessage(entry: unknown): string {
 }
 
 function readPage(value: unknown): PdfPageDimensions | null {
-  if (
-    !isRecord(value) ||
-    !isPositive(value.width) ||
-    !isPositive(value.height)
-  ) {
+  if (!isRecord(value) || !isPositive(value.width) || !isPositive(value.height)) {
     return null
   }
   return { width: value.width, height: value.height }
@@ -253,10 +236,7 @@ function readAnnotation(value: unknown): Annotation | null {
   }
 }
 
-function readRectangle(
-  id: string,
-  value: Record<string, unknown>,
-): Annotation | null {
+function readRectangle(id: string, value: Record<string, unknown>): Annotation | null {
   const stroke = readColor(value.stroke)
   const strokeWidth = readStrokeWidth(value.strokeWidth)
   if (
@@ -284,10 +264,7 @@ function readRectangle(
   }
 }
 
-function readCircle(
-  id: string,
-  value: Record<string, unknown>,
-): Annotation | null {
+function readCircle(id: string, value: Record<string, unknown>): Annotation | null {
   const stroke = readColor(value.stroke)
   const strokeWidth = readStrokeWidth(value.strokeWidth)
   if (
@@ -311,10 +288,7 @@ function readCircle(
   }
 }
 
-function readLine(
-  id: string,
-  value: Record<string, unknown>,
-): Annotation | null {
+function readLine(id: string, value: Record<string, unknown>): Annotation | null {
   const stroke = readColor(value.stroke)
   const strokeWidth = readStrokeWidth(value.strokeWidth)
   const start = readPoint(value.start)
@@ -333,10 +307,7 @@ function readLine(
   }
 }
 
-function readTextAnnotation(
-  id: string,
-  value: Record<string, unknown>,
-): Annotation | null {
+function readTextAnnotation(id: string, value: Record<string, unknown>): Annotation | null {
   const color = readColor(value.color)
   const text = readText(value.text)
   if (
@@ -366,11 +337,7 @@ function readTextAnnotation(
 }
 
 function readPoint(value: unknown): Point | null {
-  if (
-    !isRecord(value) ||
-    !isFiniteNumber(value.x) ||
-    !isFiniteNumber(value.y)
-  ) {
+  if (!isRecord(value) || !isFiniteNumber(value.x) || !isFiniteNumber(value.y)) {
     return null
   }
   return { x: value.x, y: value.y }

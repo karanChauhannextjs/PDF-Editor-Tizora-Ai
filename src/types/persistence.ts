@@ -31,10 +31,7 @@ export type ParsedAnnotationImport =
     }
   | {
       format: 'multi'
-      pages: Record<
-        number,
-        { page: PdfPageDimensions; annotations: Annotation[] }
-      >
+      pages: Record<number, { page: PdfPageDimensions; annotations: Annotation[] }>
     }
 
 export type ValidationSuccess = {

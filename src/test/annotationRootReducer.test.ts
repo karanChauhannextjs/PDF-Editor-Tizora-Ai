@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Annotation } from '@/types/annotation'
-import {
-  annotationRootReducer,
-  initialAnnotationRootState,
-} from '@/utils/annotationRootReducer'
+import { annotationRootReducer, initialAnnotationRootState } from '@/utils/annotationRootReducer'
 
 const rectangle: Annotation = {
   id: 'rect-1',

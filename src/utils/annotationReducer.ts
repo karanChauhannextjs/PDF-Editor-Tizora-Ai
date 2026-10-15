@@ -45,15 +45,11 @@ export function annotationReducer(
       }
     case 'delete':
       return {
-        annotations: state.annotations.filter(
-          (annotation) => annotation.id !== action.id,
-        ),
+        annotations: state.annotations.filter((annotation) => annotation.id !== action.id),
         selectedId: state.selectedId === action.id ? null : state.selectedId,
       }
     case 'move': {
-      const existing = state.annotations.find(
-        (annotation) => annotation.id === action.id,
-      )
+      const existing = state.annotations.find((annotation) => annotation.id === action.id)
       if (!existing) {
         return state
       }
@@ -71,8 +67,7 @@ export function annotationReducer(
         return state
       }
       const existing = state.annotations.find(
-        (annotation) =>
-          annotation.id === action.id && annotation.type === 'text',
+        (annotation) => annotation.id === action.id && annotation.type === 'text',
       )
       if (!existing) {
         return state
@@ -87,9 +82,7 @@ export function annotationReducer(
       }
     }
     case 'updateStroke': {
-      const existing = state.annotations.find(
-        (annotation) => annotation.id === action.id,
-      )
+      const existing = state.annotations.find((annotation) => annotation.id === action.id)
       if (!existing || existing.type === 'text') {
         return state
       }
@@ -106,9 +99,7 @@ export function annotationReducer(
       }
     }
     case 'updateStrokeWidth': {
-      const existing = state.annotations.find(
-        (annotation) => annotation.id === action.id,
-      )
+      const existing = state.annotations.find((annotation) => annotation.id === action.id)
       if (!existing || existing.type === 'text') {
         return state
       }
@@ -126,8 +117,7 @@ export function annotationReducer(
     }
     case 'updateTextFormat': {
       const existing = state.annotations.find(
-        (annotation) =>
-          annotation.id === action.id && annotation.type === 'text',
+        (annotation) => annotation.id === action.id && annotation.type === 'text',
       )
       if (!existing) {
         return state
@@ -146,16 +136,12 @@ export function annotationReducer(
       }
     }
     case 'select':
-      return state.selectedId === action.id
-        ? state
-        : { ...state, selectedId: action.id }
+      return state.selectedId === action.id ? state : { ...state, selectedId: action.id }
     case 'updateAnnotation': {
       if (action.annotation.id !== action.id) {
         return state
       }
-      const exists = state.annotations.some(
-        (annotation) => annotation.id === action.id,
-      )
+      const exists = state.annotations.some((annotation) => annotation.id === action.id)
       if (!exists) {
         return state
       }
@@ -174,14 +160,11 @@ export function annotationReducer(
       }
     }
     case 'reorder': {
-      const index = state.annotations.findIndex(
-        (annotation) => annotation.id === action.id,
-      )
+      const index = state.annotations.findIndex((annotation) => annotation.id === action.id)
       if (index === -1) {
         return state
       }
-      const target =
-        action.direction === 'forward' ? index + 1 : index - 1
+      const target = action.direction === 'forward' ? index + 1 : index - 1
       if (target < 0 || target >= state.annotations.length) {
         return state
       }

@@ -1,70 +1,240 @@
 # Tizora PDF Editor
 
-Browser-based PDF editor: open a file, annotate pages with shapes and text, export JSON for backup, or download a PDF with the markup baked in.
+Browser-based PDF editor: open a PDF, draw shapes and text on each page, manage layers, undo/redo edits, export annotation JSON, or download a PDF with markup embedded.
 
-## Run it
+## Setup and run
 
-You need **Node 20.19+** and npm.
+Requires **Node.js 20.19+** and npm.
 
 ```bash
 npm install
-npm run dev
 ```
 
-Vite prints a local URL (usually `http://localhost:5173`). Other useful commands: `npm run build`, `npm run test`, `npm run lint`.
+| Command        | What it does                                                |
+| -------------- | ----------------------------------------------------------- |
+| `npm run dev`  | Start the Vite dev server (usually `http://localhost:5173`) |
+| `npm run lint` | Run ESLint on the project (`--max-warnings 0`)              |
+| `npm run test` | Run Vitest once (unit + UI tests)                           |
 
-## Major libraries
+Other scripts: `npm run build` (production build), `npm run preview`, `npm run format` / `npm run format:check` (Prettier).
 
-| Library | Role in this project |
-| --- | --- |
-| **React** + **TypeScript** | UI and typed annotation model |
-| **Vite** | Dev server and production build |
-| **pdfjs-dist** | Load PDFs and render the current page to a `<canvas>` (view only—we do not write PDFs through PDF.js) |
-| **pdf-lib** | Build the “Download PDF” file: copy the original bytes and draw vector/text annotations on top |
-| **Tailwind CSS** | Layout and styling |
-| **shadcn/ui** + **@base-ui/react** | Buttons, dialogs, selects, tooltips, alerts |
-| **lucide-react** | Toolbar icons |
-| **@fontsource-variable/geist** | App font |
-| **Vitest** + **Testing Library** | Unit tests for reducers, geometry, JSON import, export edge cases |
-| **ESLint** + **Prettier** | Lint and format |
+---
 
-Everything that feels like “the editor” (tools, hit-testing, undo, JSON schema, coordinate math) is our code under `src/`, not a PDF annotation SDK.
+## Project layout (high level)
 
-## What we built ourselves
+```
+src/
+  components/
+    editor/     # PDF editor UI (viewer, toolbar, annotation layer, layers panel)
+    ui/         # shadcn/ui primitives (button, dialog, select, …)
+  hooks/        # React hooks for PDF loading and annotations
+  stores/       # Zustand session persistence (PDF + annotation history)
+  utils/        # Reducers, geometry, JSON import/export, pdf-lib export
+  types/        # TypeScript models
+  test/         # Vitest tests
+```
 
-**PDF loading (`usePdfDocument`, `src/lib/pdfjs.ts`)**  
-Files are validated (`%PDF` header) before PDF.js runs. We keep a separate `Uint8Array` of the file because PDF.js detaches the buffer you pass in—without that copy, annotated PDF download would break. The page is rendered once per document/page/canvas; the canvas ref is stable so annotation updates do not trigger a full re-render and flicker. Page navigation loads another page from the same document.
+---
 
-**Coordinates (`src/utils/coordinates.ts`, SVG overlay)**  
-Annotations live in PDF page units (width/height from PDF.js at scale 1). The SVG `viewBox` matches that space and stretches with the canvas. Pointer positions go through `clientToPagePoint` using the SVG’s bounding rect so resizing the window or zooming the browser does not throw off placement.
+## Libraries
 
-**Drawing and editing (`AnnotationLayer`, `annotationGeometry.ts`, `annotationTransform.ts`)**  
-Shapes come from pointer drag with capture: preview on move, commit on up. Rectangles normalize negative width/height; circles use the drag as a diameter; lines store endpoints. Select mode supports move, resize handles, and rotation (except circles). Text uses an inline editor; font size from the dropdown is also the min/max when resizing by handle (`clampFontSize` in `annotationStyle.ts`).
+| Library                            | Role                                                                                                     |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **pdfjs-dist**                     | Load PDFs and render the current page to a `<canvas>` (view only; we do not write PDFs through PDF.js).  |
+| **pdf-lib**                        | **Download PDF with annotations**: copy original PDF bytes and draw vector strokes + text in page space. |
+| **React** + **TypeScript**         | UI and typed annotation model.                                                                           |
+| **Vite**                           | Dev server and build.                                                                                    |
+| **Zustand**                        | Persist editor session (annotations + PDF metadata) to IndexedDB.                                        |
+| **Tailwind CSS**                   | Layout and styling.                                                                                      |
+| **shadcn/ui** + **@base-ui/react** | Accessible UI primitives.                                                                                |
+| **lucide-react**                   | Icons.                                                                                                   |
+| **sonner**                         | Toast notifications (e.g. successful download).                                                          |
+| **Vitest** + **Testing Library**   | Tests.                                                                                                   |
+| **ESLint** + **Prettier**          | Lint and format.                                                                                         |
 
-**State (`useAnnotations`, `annotationReducer`, `annotationRootReducer`)**  
-Per-page annotation lists sit in a root state keyed by page index. A small reducer handles add/update/delete/move/reorder/style changes. Undo/redo keeps a bounded history; drag operations wrap in `beginHistoryTransaction` / `endHistoryTransaction` so one gesture is one undo step.
+Editing logic (tools, hit-testing, undo, coordinates, JSON schema) lives under `src/`—not a third-party annotation SDK.
 
-**Persistence (`annotationPersistence.ts`)**  
-Export produces versioned JSON: v1 single-page or v2 multi-page. Import validates types, ids, numbers, colors, and page metadata before applying anything. Wrong page size vs the open PDF scales annotations and shows a notice. Filenames for export/download include `Date.now()` so repeated saves do not overwrite in the downloads folder.
+### PDF view vs annotated download
 
-**PDF export (`pdfExport.ts`)**  
-Uses stored PDF bytes + `pdf-lib` to draw strokes and text in page space, including rotation where it matters. This is separate from the JSON sidecar: JSON is for editing round-trips; download is for sharing a single file.
+1. **View** — PDF.js renders the page bitmap on a canvas.
+2. **Annotate** — An SVG overlay (`AnnotationLayer`) sits on top; all shapes/text are vectors in PDF page units.
+3. **Export JSON** — Versioned sidecar file for backup and re-import (`annotationPersistence.ts`).
+4. **Download PDF** — `downloadAnnotatedPdf` in `pdfExport.ts` uses stored `Uint8Array` bytes + `pdf-lib` to stamp annotations onto a copy of the file (including rotation where applicable).
 
-**UI shell (`PdfEditor.tsx`)**  
-Toolbar, style bar (shape vs text controls), layers panel, empty state, and confirm dialogs when opening a new PDF or import would wipe annotations.
+---
 
-## Design choices (short)
+## `src/stores` — Zustand session
 
-- **Canvas + SVG stack** — PDF.js is good at rendering; SVG is good at interactive vectors. We do not try to annotate inside the canvas bitmap.
-- **JSON sidecar** — Easy to validate, diff, and import without parsing PDF internals. Multi-page v2 matches how we store state in memory.
-- **pdf-lib only for download** — Keeps the editing path simple; embedding at export time is enough for the MVP deliverable.
-- **Strict import validation** — Bad files fail with a clear message instead of partially rendering garbage.
-- **Desktop-first layout** — Page width capped (~960px CSS) so the sheet and overlay stay aligned on typical screens.
+**`editorSessionStore.ts`** persists the editor across refresh:
 
-## Tests
+| State               | Purpose                                                                                      |
+| ------------------- | -------------------------------------------------------------------------------------------- |
+| `annotationHistory` | `{ past, present, future }` undo stack over **all pages** (`AnnotationRootState`).           |
+| `pdfSession`        | `fileName`, `pdfData` (byte array), `currentPageIndex` so the same PDF reopens after reload. |
+| `blankPage`         | Dimensions when working on annotations without a PDF (e.g. tests / import-only).             |
+| `hasHydrated`       | `true` after IndexedDB rehydrate (avoids flashing empty UI on load).                         |
 
-`npm run test` covers reducer moves/deletes, geometry helpers, JSON parse errors, PDF byte handling for export, and a few UI flows with PDF.js mocked where needed.
+Storage uses **`createJSONStorage` + `createIdbStorage()`** (`src/utils/idbStorage.ts`) with key `tizora-editor-session-v1`. In tests, hydration is skipped via `import.meta.env.VITEST`.
 
-## Limits worth knowing
+Helpers: `cloneAnnotationHistory`, `resetEditorSessionStoreForTests` (used in `src/test/setup.ts`).
 
-Password-protected PDFs are rejected. Very large PDFs are limited by browser memory like any client-only tool. Export JSON is the source of truth for editing; if you only keep the downloaded PDF, you cannot re-import vector edits as structured annotations (that would need a different format).
+---
+
+## `src/components/ui` — shadcn/ui
+
+Installed via [shadcn](https://ui.shadcn.com/) (see `components.json`). Primitives used in the editor include:
+
+- `button`, `input`, `textarea`, `select`, `dialog`, `alert`, `separator`, `tooltip`, `sonner` (toasts)
+
+These wrap **@base-ui/react** where needed and use **Tailwind** + `cn()` from `src/lib/utils.ts`. ESLint turns off `react-refresh/only-export-components` for `src/components/ui/**` because shadcn files often export variants alongside components.
+
+---
+
+## Hooks (`src/hooks`)
+
+### `usePdfDocument`
+
+Owns the **PDF.js document lifecycle**:
+
+- Validates `%PDF` header before load (`hasPdfHeader`, `readFileBytes`).
+- Keeps a **separate `Uint8Array`** of file bytes (`pdfBytesRef`) because PDF.js can detach the buffer you pass in—required for **Download PDF**.
+- Renders the current page to the canvas with device-pixel ratio; avoids re-rendering when only annotations change (canvas snapshot + `requestId`).
+- **`goToPage`** — serializes page changes (ignores overlapping navigations until render completes).
+- **`loadFromBytes` / `unloadPdf`** — open from file or restored session; clear document on remove.
+
+Returns: `phase`, `page`, `pageCount`, `currentPageIndex`, `fileName`, `handleCanvasRef`, `getPdfBytes`, `goToPage`, `error`, etc.
+
+### `useAnnotations`
+
+Owns **per-page annotation state** and **undo/redo** on top of the Zustand store:
+
+- Reads `annotationHistory.present` and slices the current page via `getPageSlice`.
+- **`dispatch`** — forwards actions to `annotationRootReducer` with `pageIndex`.
+- **`beginHistoryTransaction` / `endHistoryTransaction`** — one pointer gesture (drag move, resize, rotate, color picker drag) = **one** undo step.
+- **`undo` / `redo`** — swap `present` with `past` / `future`; clears any open transaction; history capped at **80** steps.
+- Actions that **do not** record history: `select`, `setPageDimensions`.
+- **`replaceDocument` / `replacePage` / `exportRootState`** — import JSON and export.
+
+### `usePdfEditor` (orchestration)
+
+Composes `usePdfDocument` + `useAnnotations` + session restore, file open/import/export, keyboard shortcuts, tool/style state, and confirm dialogs. **`PdfEditor.tsx`** is a thin shell that calls this hook and renders subcomponents (`PdfEditorHeader`, `PdfEditorChrome`, `PdfEditorWorkspace`, etc.).
+
+---
+
+## Drawing shapes (pointer down → move → up)
+
+Flow is implemented in **`AnnotationLayer.tsx`** with helpers in **`annotationGeometry.ts`** and **`annotationTransform.ts`**.
+
+| Step             | What happens                                                                                                                                                                                          |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Pointer down** | `handlePointerDown` — `clientToPagePoint` maps screen coords to PDF page units using the SVG `viewBox`. For rectangle/circle/line tools, starts a `draw` drag with `setPointerCapture`.               |
+| **Pointer move** | `handlePointerMove` — `shapeDraftFromDrag(tool, start, point, page)` builds a live preview (`preview` state).                                                                                         |
+| **Pointer up**   | `handlePointerUp` — `isSignificantShape(draft)` drops tiny clicks; else `annotationFromDraft(draft, stroke, strokeWidth)` then `dispatch({ type: 'add', annotation })` after `clampAnnotationToPage`. |
+
+**`shapeDraftFromDrag`** (geometry):
+
+- **Rectangle** — normalizes negative width/height from drag box.
+- **Circle** — center + radius from drag (diameter-style drag).
+- **Line** — `start` and `end` points.
+
+**Text** — pointer down with Text tool calls `onTextRequest` → inline `TextAnnotationEditor` → `add` on save.
+
+**Select mode** — `handleAnnotationPointerDown` selects; drag moves annotation (`move` + `updateAnnotation`); corner handles **`resizeAnnotation`**; rotate handle uses **`rotateAnnotation`** (circles have no rotate handle).
+
+---
+
+## Undo / redo
+
+Model: classic **past / present / future** stacks in `annotationHistory` (`editorSessionStore`).
+
+- Each meaningful reducer action clones `present` into `past` and clears `future` (`useAnnotations.applyAction`).
+- **Transactions**: `beginHistoryTransaction` snapshots state at gesture start; `endHistoryTransaction` pushes that snapshot only if `present` changed—so dragging a shape once undoes as one step.
+- **Undo** (`useAnnotations.undo`): pop `past` → new `present`, push old present to `future`.
+- **Redo**: pop `future` → new `present`, push old present to `past`.
+- Toolbar **Undo / Redo** and keyboard shortcuts are wired in `usePdfEditor`.
+- Style bar color changes batch via begin/end transaction on picker focus/blur.
+
+Reducer entry points: **`annotationReducer.ts`** (single page), **`annotationRootReducer.ts`** (page index + all pages).
+
+---
+
+## Layers (stacking order)
+
+- Annotations are stored in an **ordered array** per page. **Later items paint on top** in the SVG (`annotations.map` in `AnnotationLayer`).
+- **`AnnotationListPanel`** shows layers **top-first** (reversed list) with “Top items draw above lower ones.”
+- **Move up / down** call `dispatch({ type: 'reorder', id, direction: 'forward' | 'backward' })`.
+- **`annotationReducer` `reorder`** swaps the item with its neighbor in the array (`forward` = toward end of array = visually higher).
+
+---
+
+## Rotation
+
+- Shapes (not circles) expose a **rotate handle** via `SelectionHandles` + `getRotateHandlePoint` / `getRotateHandleAnchor` in `annotationTransform.ts`.
+- Drag sets `DragState` kind `'rotate'`; on move, **`rotateAnnotation`** updates `rotation` degrees around the shape pivot (`getAnnotationPivot`).
+- **`AnnotationItem`** applies `transform="rotate(...)"` when rendering.
+- **PDF export** applies the same rotation when drawing with pdf-lib.
+
+Resize uses **`resizeAnnotation`** with handle ids (`nw`, `se`, `start`, `end`, `radius`, `text-scale`, etc.).
+
+---
+
+## ESLint configuration
+
+File: **`eslint.config.js`** (flat config).
+
+| Area              | Rules / plugins                                                                        |
+| ----------------- | -------------------------------------------------------------------------------------- |
+| **Ignores**       | `dist`, `node_modules`, `coverage`, `public`, `**/*.min.mjs`                           |
+| **Base**          | `@eslint/js` recommended                                                               |
+| **TypeScript**    | `typescript-eslint` recommended                                                        |
+| **React**         | `eslint-plugin-react-hooks` (recommended), `eslint-plugin-react-refresh`               |
+| **react-refresh** | `only-export-components`: warn (off for `src/components/ui/**` and `FileControls.tsx`) |
+| **Prettier**      | `eslint-config-prettier` disables conflicting formatting rules                         |
+
+Run: `npm run lint`.
+
+---
+
+## Prettier configuration
+
+File: **`.prettierrc.json`**
+
+| Option          | Value    |
+| --------------- | -------- |
+| `semi`          | `false`  |
+| `singleQuote`   | `true`   |
+| `trailingComma` | `all`    |
+| `tabWidth`      | `2`      |
+| `printWidth`    | `100`    |
+| `arrowParens`   | `always` |
+| `endOfLine`     | `lf`     |
+
+Run: `npm run format` or `npm run format:check`.
+
+---
+
+## Tests (Vitest)
+
+Config in **`vite.config.ts`**: environment **`happy-dom`**, setup **`src/test/setup.ts`** (resets editor store, jest-dom matchers).
+
+| File                                | What it covers                                                                                                   |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **`PdfEditor.test.tsx`**            | UI: create text annotation; no delete while editing text; toolbar undo; invalid PDF shows alert (PDF.js mocked). |
+| **`annotationReducer.test.ts`**     | Add/delete; move rectangle, circle, line.                                                                        |
+| **`annotationRootReducer.test.ts`** | Annotations isolated per page index.                                                                             |
+| **`annotationHistory.test.ts`**     | Redo restores stroke color after undo; history snapshots not mutated.                                            |
+| **`annotationGeometry.test.ts`**    | Rectangle drag normalization; pointer → page coordinate mapping.                                                 |
+| **`annotationPersistence.test.ts`** | JSON v1/v2 round-trip, sample document, malformed JSON / bad types rejected.                                     |
+| **`pdfExport.test.ts`**             | Annotated PDF bytes embed markup via pdf-lib.                                                                    |
+| **`fileValidation.test.ts`**        | Non-PDF file rejected.                                                                                           |
+
+Run: `npm run test`.
+
+---
+
+## Design notes
+
+- **Canvas + SVG** — PDF.js renders pixels; SVG handles interaction and crisp vectors.
+- **JSON sidecar** — Structured editing and import validation; multi-page v2 matches in-memory root state.
+- **Client-only** — Password-protected or huge PDFs are limited by browser memory.
+- **Download vs JSON** — Download bakes visuals into PDF; re-editing vectors from that file alone is not supported (use JSON export for round-trips).

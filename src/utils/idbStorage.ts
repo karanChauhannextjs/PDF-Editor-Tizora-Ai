@@ -33,9 +33,7 @@ function idbGet(key: string): Promise<string | null> {
           reject(request.error ?? new Error('IndexedDB get failed'))
         }
         request.onsuccess = () => {
-          resolve(
-            typeof request.result === 'string' ? request.result : null,
-          )
+          resolve(typeof request.result === 'string' ? request.result : null)
         }
         tx.oncomplete = () => {
           db.close()

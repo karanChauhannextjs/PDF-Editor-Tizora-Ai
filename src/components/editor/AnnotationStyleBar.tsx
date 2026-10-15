@@ -57,16 +57,12 @@ export function AnnotationStyleBar({
   onEndStyleHistoryTransaction,
 }: AnnotationStyleBarProps) {
   const showTextControls =
-    tool === 'text' ||
-    isComposingText ||
-    (tool === 'select' && selected?.type === 'text')
+    tool === 'text' || isComposingText || (tool === 'select' && selected?.type === 'text')
   const showShapeControls =
     tool === 'rectangle' ||
     tool === 'circle' ||
     tool === 'line' ||
-    (tool === 'select' &&
-      !isComposingText &&
-      selected?.type !== 'text')
+    (tool === 'select' && !isComposingText && selected?.type !== 'text')
 
   const canEditShapeStyle =
     tool === 'rectangle' ||
@@ -74,20 +70,12 @@ export function AnnotationStyleBar({
     tool === 'line' ||
     (selected !== null && isShapeAnnotation(selected))
 
-  const canEditTextStyle =
-    tool === 'text' ||
-    isComposingText ||
-    selected?.type === 'text'
+  const canEditTextStyle = tool === 'text' || isComposingText || selected?.type === 'text'
 
-  const shapeStroke =
-    selected && isShapeAnnotation(selected) ? selected.stroke : drawStroke
+  const shapeStroke = selected && isShapeAnnotation(selected) ? selected.stroke : drawStroke
   const shapeStrokeWidth =
-    selected && isShapeAnnotation(selected)
-      ? selected.strokeWidth
-      : drawStrokeWidth
-  const activeText = textFormatFromAnnotation(
-    selected?.type === 'text' ? selected : textFormat,
-  )
+    selected && isShapeAnnotation(selected) ? selected.strokeWidth : drawStrokeWidth
+  const activeText = textFormatFromAnnotation(selected?.type === 'text' ? selected : textFormat)
 
   const setShapeStroke = (stroke: string) => {
     if (selected && isShapeAnnotation(selected)) {
@@ -132,9 +120,7 @@ export function AnnotationStyleBar({
           label="Shape color"
           disabled={!canEditShapeStyle}
           instanceKey={
-            selected && isShapeAnnotation(selected)
-              ? `shape-${selected.id}`
-              : 'shape-draw'
+            selected && isShapeAnnotation(selected) ? `shape-${selected.id}` : 'shape-draw'
           }
           value={shapeStroke}
           onChange={setShapeStroke}
@@ -161,11 +147,7 @@ export function AnnotationStyleBar({
           <ColorPickerField
             label="Text color"
             disabled={!canEditTextStyle}
-            instanceKey={
-              selected?.type === 'text'
-                ? `text-${selected.id}`
-                : 'text-compose'
-            }
+            instanceKey={selected?.type === 'text' ? `text-${selected.id}` : 'text-compose'}
             value={activeText.color}
             onChange={(color) => patchTextFormat({ color })}
             onBeginHistoryTransaction={onBeginStyleHistoryTransaction}
@@ -196,9 +178,7 @@ export function AnnotationStyleBar({
             label="Underline"
             disabled={!canEditTextStyle}
             pressed={activeText.underline}
-            onClick={() =>
-              patchTextFormat({ underline: !activeText.underline })
-            }
+            onClick={() => patchTextFormat({ underline: !activeText.underline })}
           >
             <Underline className="size-4" />
           </ToggleFormat>
@@ -431,10 +411,7 @@ function StrokeWidthSelect({
 
   return (
     <div className="flex items-center gap-2">
-      <span
-        id="stroke-width-label"
-        className="text-xs font-medium text-muted-foreground"
-      >
+      <span id="stroke-width-label" className="text-xs font-medium text-muted-foreground">
         Border width
       </span>
       <Select
@@ -484,10 +461,7 @@ function FontSizeSelect({
 
   return (
     <div className="flex items-center gap-2">
-      <span
-        id="font-size-label"
-        className="text-xs font-medium text-muted-foreground"
-      >
+      <span id="font-size-label" className="text-xs font-medium text-muted-foreground">
         Font size
       </span>
       <Select
@@ -541,8 +515,7 @@ function ToggleFormat({
       variant={pressed ? 'default' : 'outline'}
       className={cn(
         'size-9 rounded-xl [&_svg]:text-current',
-        !pressed &&
-          'border-border bg-background text-foreground hover:bg-muted/70',
+        !pressed && 'border-border bg-background text-foreground hover:bg-muted/70',
       )}
       aria-label={label}
       aria-pressed={pressed}

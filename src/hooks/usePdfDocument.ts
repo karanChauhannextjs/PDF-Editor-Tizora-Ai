@@ -42,72 +42,64 @@ export function usePdfDocument() {
     if (!snap) {
       return true
     }
-    return (
-      snap.canvas !== canvas ||
-      snap.page !== page ||
-      snap.requestId !== requestId
-    )
+    return snap.canvas !== canvas || snap.page !== page || snap.requestId !== requestId
   }
 
-  const recordCanvasRender = (
-    canvas: HTMLCanvasElement,
-    page: PDFPageProxy,
-    requestId: number,
-  ) => {
+  const recordCanvasRender = (canvas: HTMLCanvasElement, page: PDFPageProxy, requestId: number) => {
     canvasRenderSnapshotRef.current = { canvas, page, requestId }
   }
 
-  const renderPage = useCallback(async (
-    canvas: HTMLCanvasElement,
-    page: PDFPageProxy,
-    requestId: number,
-  ): Promise<PdfLoadResult> => {
-    const baseViewport = page.getViewport({ scale: 1 })
-    const cssWidth = cssWidthForPage({
-      width: baseViewport.width,
-      height: baseViewport.height,
-    })
-    const viewport = page.getViewport({ scale: cssWidth / baseViewport.width })
-    const pixelRatio = window.devicePixelRatio || 1
-    canvas.width = Math.floor(viewport.width * pixelRatio)
-    canvas.height = Math.floor(viewport.height * pixelRatio)
+  const renderPage = useCallback(
+    async (
+      canvas: HTMLCanvasElement,
+      page: PDFPageProxy,
+      requestId: number,
+    ): Promise<PdfLoadResult> => {
+      const baseViewport = page.getViewport({ scale: 1 })
+      const cssWidth = cssWidthForPage({
+        width: baseViewport.width,
+        height: baseViewport.height,
+      })
+      const viewport = page.getViewport({ scale: cssWidth / baseViewport.width })
+      const pixelRatio = window.devicePixelRatio || 1
+      canvas.width = Math.floor(viewport.width * pixelRatio)
+      canvas.height = Math.floor(viewport.height * pixelRatio)
 
-    const context = canvas.getContext('2d')
-    if (!context) {
-      console.error(
-        'Canvas 2D context was unavailable while rendering a PDF page',
-      )
-      return {
-        ok: false,
-        message: 'The browser could not prepare a surface for this PDF.',
+      const context = canvas.getContext('2d')
+      if (!context) {
+        console.error('Canvas 2D context was unavailable while rendering a PDF page')
+        return {
+          ok: false,
+          message: 'The browser could not prepare a surface for this PDF.',
+        }
       }
-    }
 
-    renderTaskRef.current?.cancel()
-    const task = page.render({
-      canvas: null,
-      canvasContext: context,
-      viewport,
-      transform:
-        pixelRatio === 1 ? undefined : [pixelRatio, 0, 0, pixelRatio, 0, 0],
-    })
-    renderTaskRef.current = task
+      renderTaskRef.current?.cancel()
+      const task = page.render({
+        canvas: null,
+        canvasContext: context,
+        viewport,
+        transform: pixelRatio === 1 ? undefined : [pixelRatio, 0, 0, pixelRatio, 0, 0],
+      })
+      renderTaskRef.current = task
 
-    try {
-      await task.promise
-      recordCanvasRender(canvas, page, requestId)
-      return { ok: true }
-    } catch (renderError) {
-      if (
-        renderError instanceof RenderingCancelledException ||
-        requestId !== requestRef.current
-      ) {
+      try {
+        await task.promise
+        recordCanvasRender(canvas, page, requestId)
         return { ok: true }
+      } catch (renderError) {
+        if (
+          renderError instanceof RenderingCancelledException ||
+          requestId !== requestRef.current
+        ) {
+          return { ok: true }
+        }
+        console.error('Failed to render PDF page', renderError)
+        return { ok: false, message: 'The PDF page could not be drawn.' }
       }
-      console.error('Failed to render PDF page', renderError)
-      return { ok: false, message: 'The PDF page could not be drawn.' }
-    }
-  }, [])
+    },
+    [],
+  )
 
   const showPage = useCallback(
     async (
@@ -150,79 +142,78 @@ export function usePdfDocument() {
     [renderPage],
   )
 
-  const handleCanvasRef = useCallback((node: HTMLCanvasElement | null) => {
-    canvasRef.current = node
-    const page = pageRef.current
-    if (!node || !page) {
-      return
-    }
-    const requestId = requestRef.current
-    if (!canvasNeedsRender(node, page, requestId)) {
-      return
-    }
-    void renderPage(node, page, requestId).then((result) => {
-      if (!result.ok && requestRef.current) {
-        setError(result.message)
+  const handleCanvasRef = useCallback(
+    (node: HTMLCanvasElement | null) => {
+      canvasRef.current = node
+      const page = pageRef.current
+      if (!node || !page) {
+        return
       }
-    })
-  }, [renderPage])
-
-  const loadFromBytes = useCallback(async (
-    bytes: Uint8Array,
-    fileName: string,
-    pageIndex = 1,
-  ): Promise<PdfLoadResult> => {
-    const requestId = requestRef.current + 1
-    requestRef.current = requestId
-    setPhase('loading')
-    setError(null)
-
-    try {
-      if (requestId !== requestRef.current) {
-        return { ok: false, message: 'The PDF load was cancelled.' }
+      const requestId = requestRef.current
+      if (!canvasNeedsRender(node, page, requestId)) {
+        return
       }
-      if (!hasPdfHeader(bytes)) {
+      void renderPage(node, page, requestId).then((result) => {
+        if (!result.ok && requestRef.current) {
+          setError(result.message)
+        }
+      })
+    },
+    [renderPage],
+  )
+
+  const loadFromBytes = useCallback(
+    async (bytes: Uint8Array, fileName: string, pageIndex = 1): Promise<PdfLoadResult> => {
+      const requestId = requestRef.current + 1
+      requestRef.current = requestId
+      setPhase('loading')
+      setError(null)
+
+      try {
+        if (requestId !== requestRef.current) {
+          return { ok: false, message: 'The PDF load was cancelled.' }
+        }
+        if (!hasPdfHeader(bytes)) {
+          setPhase(pageRef.current ? 'ready' : 'idle')
+          const message = 'This file does not look like a valid PDF.'
+          setError(message)
+          return { ok: false, message }
+        }
+
+        const storedBytes = new Uint8Array(bytes.byteLength)
+        storedBytes.set(bytes)
+        pdfBytesRef.current = storedBytes
+        const loadingTask = getDocument({ data: storedBytes.slice() })
+        const pdf = await loadingTask.promise
+        if (requestId !== requestRef.current) {
+          await pdf.destroy()
+          return { ok: false, message: 'The PDF load was cancelled.' }
+        }
+
+        const previous = documentRef.current
+        documentRef.current = pdf
+        if (previous && previous !== pdf) {
+          renderTaskRef.current?.cancel()
+          canvasRenderSnapshotRef.current = null
+          await previous.destroy()
+        }
+
+        const safePageIndex = Math.min(Math.max(pageIndex, 1), pdf.numPages)
+        const result = await showPage(pdf, safePageIndex, requestId, fileName)
+        return result.ok ? { ok: true } : result
+      } catch (loadError) {
+        if (requestId !== requestRef.current) {
+          return { ok: false, message: 'The PDF load was cancelled.' }
+        }
+        console.error('Failed to load PDF', loadError)
         setPhase(pageRef.current ? 'ready' : 'idle')
-        const message = 'This file does not look like a valid PDF.'
+        const message = messageForPdfLoadError(loadError)
         setError(message)
         return { ok: false, message }
       }
-
-      const storedBytes = new Uint8Array(bytes.byteLength)
-      storedBytes.set(bytes)
-      pdfBytesRef.current = storedBytes
-      const loadingTask = getDocument({ data: storedBytes.slice() })
-      const pdf = await loadingTask.promise
-      if (requestId !== requestRef.current) {
-        await pdf.destroy()
-        return { ok: false, message: 'The PDF load was cancelled.' }
-      }
-
-      const previous = documentRef.current
-      documentRef.current = pdf
-      if (previous && previous !== pdf) {
-        renderTaskRef.current?.cancel()
-        canvasRenderSnapshotRef.current = null
-        await previous.destroy()
-      }
-
-      const safePageIndex = Math.min(
-        Math.max(pageIndex, 1),
-        pdf.numPages,
-      )
-      const result = await showPage(pdf, safePageIndex, requestId, fileName)
-      return result.ok ? { ok: true } : result
-    } catch (loadError) {
-      if (requestId !== requestRef.current) {
-        return { ok: false, message: 'The PDF load was cancelled.' }
-      }
-      console.error('Failed to load PDF', loadError)
-      setPhase(pageRef.current ? 'ready' : 'idle')
-      const message = messageForPdfLoadError(loadError)
-      setError(message)
-      return { ok: false, message }
-    }
-  }, [showPage])
+    },
+    [showPage],
+  )
 
   const loadFile = async (file: File): Promise<PdfLoadResult> => {
     try {
@@ -259,12 +250,7 @@ export function usePdfDocument() {
       setPhase('loading')
       setError(null)
       try {
-        const result = await showPage(
-          pdf,
-          pageIndex,
-          requestId,
-          ready.fileName,
-        )
+        const result = await showPage(pdf, pageIndex, requestId, ready.fileName)
         if (!result.ok && documentRef.current && pageRef.current) {
           setPhase('ready')
         }

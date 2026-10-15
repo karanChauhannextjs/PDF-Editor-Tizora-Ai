@@ -57,10 +57,7 @@ export function TextAnnotationEditor({
       onSubmit={handleSubmit}
       onPointerDown={(event) => event.stopPropagation()}
     >
-      <label
-        className="mb-1 block text-xs font-medium"
-        htmlFor="annotation-text"
-      >
+      <label className="mb-1 block text-xs font-medium" htmlFor="annotation-text">
         Annotation text
       </label>
       <Textarea

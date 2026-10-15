@@ -15,8 +15,7 @@ export function Toaster({ ...props }: ToasterProps) {
           description: 'text-xs text-muted-foreground',
           actionButton: 'bg-primary text-primary-foreground',
           cancelButton: 'bg-muted text-muted-foreground',
-          closeButton:
-            'border-border bg-background text-foreground hover:bg-muted',
+          closeButton: 'border-border bg-background text-foreground hover:bg-muted',
         },
       }}
       {...props}
