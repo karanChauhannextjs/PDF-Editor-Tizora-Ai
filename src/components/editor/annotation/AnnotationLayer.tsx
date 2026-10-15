@@ -15,8 +15,8 @@ import {
   rotateAnnotation,
 } from '@/utils/annotationTransform'
 import { clientToPagePoint } from '@/utils/coordinates'
-import { AnnotationItem } from '@/components/editor/AnnotationItem'
-import { SelectionHandles } from '@/components/editor/SelectionHandles'
+import { AnnotationItem } from '@/components/editor/annotation/AnnotationItem'
+import { SelectionHandles } from '@/components/editor/annotation/SelectionHandles'
 
 /** Matches Tailwind `max-md` — scroll lock while dragging applies only on small screens. */
 const MOBILE_MAX_WIDTH_MEDIA = '(max-width: 767px)'

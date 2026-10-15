@@ -1,5 +1,5 @@
 import { FileControls } from '@/components/editor/FileControls'
-import { PdfEditorLogo } from '@/components/editor/PdfEditorLogo'
+import { PdfEditorLogo } from '@/components/editor/pdfEditor/PdfEditorLogo'
 
 type PdfEditorHeaderProps = {
   canImport: boolean

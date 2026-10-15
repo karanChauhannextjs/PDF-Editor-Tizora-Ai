@@ -1,4 +1,4 @@
-import { PdfEditor } from '@/components/editor/PdfEditor'
+import { PdfEditor } from '@/components/editor/pdfEditor/PdfEditor'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 

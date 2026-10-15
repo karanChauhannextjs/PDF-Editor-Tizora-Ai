@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import type { PendingAction } from '@/components/editor/pdfEditor/types'
+import type { PendingAction } from './types'
 
 type PdfEditorPendingDialogProps = {
   pending: PendingAction | null

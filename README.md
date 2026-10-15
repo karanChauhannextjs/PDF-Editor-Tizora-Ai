@@ -27,7 +27,7 @@ Other scripts: `npm run build`, `npm run preview`, `npm run format`, `npm run fo
 
 ```
 src/
-  components/editor/   PDF UI (viewer, toolbar, annotation layer, layers)
+  components/editor/   PDF shell (viewer, file/page controls); pdfEditor/ and annotation/ subfolders
   components/ui/       shadcn/ui primitives
   hooks/               usePdfDocument, useAnnotations, usePdfEditor
   stores/              Zustand + IndexedDB session

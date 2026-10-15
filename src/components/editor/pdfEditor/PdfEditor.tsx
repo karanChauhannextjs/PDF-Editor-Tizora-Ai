@@ -1,9 +1,9 @@
 import type { PdfPageDimensions } from '@/types/pdf'
 import { usePdfEditor } from '@/hooks/usePdfEditor'
-import { PdfEditorChrome } from '@/components/editor/PdfEditorChrome'
-import { PdfEditorHeader } from '@/components/editor/PdfEditorHeader'
-import { PdfEditorPendingDialog } from '@/components/editor/PdfEditorPendingDialog'
-import { PdfEditorWorkspace } from '@/components/editor/PdfEditorWorkspace'
+import { PdfEditorChrome } from '@/components/editor/pdfEditor/PdfEditorChrome'
+import { PdfEditorHeader } from '@/components/editor/pdfEditor/PdfEditorHeader'
+import { PdfEditorPendingDialog } from '@/components/editor/pdfEditor/PdfEditorPendingDialog'
+import { PdfEditorWorkspace } from '@/components/editor/pdfEditor/PdfEditorWorkspace'
 import { SessionLoader } from '@/components/editor/SessionLoader'
 
 type PdfEditorProps = {

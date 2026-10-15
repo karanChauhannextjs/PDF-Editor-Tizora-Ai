@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { PdfEditor } from '@/components/editor/PdfEditor'
+import { PdfEditor } from '@/components/editor/pdfEditor/PdfEditor'
 
 vi.mock('@/lib/pdfjs', () => ({
   getDocument: vi.fn(),

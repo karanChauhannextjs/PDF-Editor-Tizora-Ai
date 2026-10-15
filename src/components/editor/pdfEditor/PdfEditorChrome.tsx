@@ -4,8 +4,8 @@ import { annotationKindLabel, isTextAnnotation } from '@/utils/annotationGeometr
 import type { AnnotationAction } from '@/utils/annotationReducer'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { AnnotationStyleBar } from '@/components/editor/AnnotationStyleBar'
-import { AnnotationToolbar } from '@/components/editor/AnnotationToolbar'
+import { AnnotationStyleBar } from '@/components/editor/annotation/AnnotationStyleBar'
+import { AnnotationToolbar } from '@/components/editor/annotation/AnnotationToolbar'
 import { toolLabel } from '@/components/editor/pdfEditor/utils'
 
 type PdfEditorChromeProps = {
