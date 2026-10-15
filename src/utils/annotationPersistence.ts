@@ -8,7 +8,11 @@ import {
   type ValidationResult,
 } from '@/types/persistence'
 import type { AnnotationRootState } from '@/utils/annotationRootReducer'
+import { getAnnotationPageBounds } from '@/utils/annotationTransform'
 import { MAX_FONT_SIZE, MIN_FONT_SIZE } from '@/utils/annotationStyle'
+
+const DEFAULT_EXPORT_PAGE_WIDTH = 612
+const DEFAULT_EXPORT_PAGE_HEIGHT = 792
 
 const HEX_COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
 const ANNOTATION_TYPES = ['rectangle', 'circle', 'line', 'text'] as const
@@ -147,6 +151,29 @@ function readAnnotationList(
   return { ok: true, annotations }
 }
 
+function resolvePageDimensionsForExport(
+  annotations: Annotation[],
+  stored: PdfPageDimensions | undefined,
+): PdfPageDimensions | null {
+  if (stored) {
+    return stored
+  }
+  if (annotations.length === 0) {
+    return null
+  }
+  let maxX = 0
+  let maxY = 0
+  for (const annotation of annotations) {
+    const bounds = getAnnotationPageBounds(annotation)
+    maxX = Math.max(maxX, bounds.maxX)
+    maxY = Math.max(maxY, bounds.maxY)
+  }
+  return {
+    width: Math.max(DEFAULT_EXPORT_PAGE_WIDTH, Math.ceil(maxX) + 1),
+    height: Math.max(DEFAULT_EXPORT_PAGE_HEIGHT, Math.ceil(maxY) + 1),
+  }
+}
+
 export function buildAnnotationDocumentFromRoot(state: AnnotationRootState): AnnotationDocumentV2 {
   const pageIndexes = new Set<number>([
     ...Object.keys(state.pages).map(Number),
@@ -160,7 +187,10 @@ export function buildAnnotationDocumentFromRoot(state: AnnotationRootState): Ann
       if (annotations.length === 0) {
         return []
       }
-      const dimensions = state.pageDimensions[pageIndex]
+      const dimensions = resolvePageDimensionsForExport(
+        annotations,
+        state.pageDimensions[pageIndex],
+      )
       if (!dimensions) {
         return []
       }

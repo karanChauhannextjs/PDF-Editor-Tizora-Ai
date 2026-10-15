@@ -102,8 +102,13 @@ export function usePdfEditor({ initialPage }: PdfEditorOptions = {}) {
   useEffect(() => {
     if (pdf.page) {
       setPageDimensions(pdf.currentPageIndex, pdf.page)
+      return
     }
-  }, [pdf.page, pdf.currentPageIndex, setPageDimensions])
+    const blank = blankPage ?? storedBlankPage
+    if (blank) {
+      setPageDimensions(1, blank)
+    }
+  }, [pdf.page, pdf.currentPageIndex, blankPage, storedBlankPage, setPageDimensions])
 
   const deleteAnnotation = useCallback(
     (id: string) => {
@@ -294,7 +299,16 @@ export function usePdfEditor({ initialPage }: PdfEditorOptions = {}) {
       return
     }
     try {
-      const document = buildAnnotationDocumentFromRoot(exportRootState())
+      const root = exportRootState()
+      const activePageIndex = pdf.page ? pdf.currentPageIndex : 1
+      const enrichedRoot =
+        page && !root.pageDimensions[activePageIndex]
+          ? {
+              ...root,
+              pageDimensions: { ...root.pageDimensions, [activePageIndex]: page },
+            }
+          : root
+      const document = buildAnnotationDocumentFromRoot(enrichedRoot)
       if (document.pages.length === 0) {
         setAppError('There are no annotations to export.')
         return

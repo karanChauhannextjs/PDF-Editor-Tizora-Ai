@@ -5,7 +5,12 @@ import {
   ANNOTATION_DOCUMENT_VERSION_MULTI,
   type AnnotationDocumentV1,
 } from '@/types/persistence'
-import { parseAnnotationDocument, serializeAnnotationDocument } from '@/utils/annotationPersistence'
+import {
+  buildAnnotationDocumentFromRoot,
+  parseAnnotationDocument,
+  serializeAnnotationDocument,
+} from '@/utils/annotationPersistence'
+import type { AnnotationRootState } from '@/utils/annotationRootReducer'
 
 const documentV1 = {
   version: ANNOTATION_DOCUMENT_VERSION,
@@ -61,6 +66,22 @@ describe('annotation persistence', () => {
       'rectangle',
       'text',
     ])
+  })
+
+  it('exports annotations even when page dimensions were not stored', () => {
+    const state: AnnotationRootState = {
+      pages: {
+        1: {
+          annotations: documentV1.annotations,
+          selectedId: null,
+        },
+      },
+      pageDimensions: {},
+    }
+    const exported = buildAnnotationDocumentFromRoot(state)
+    expect(exported.pages).toHaveLength(1)
+    expect(exported.pages[0]?.annotations).toEqual(documentV1.annotations)
+    expect(exported.pages[0]?.pageIndex).toBe(1)
   })
 
   it('imports multi-page version 2 documents', () => {
