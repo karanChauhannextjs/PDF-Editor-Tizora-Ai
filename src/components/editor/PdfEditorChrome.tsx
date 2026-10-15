@@ -62,7 +62,7 @@ export function PdfEditorChrome({
   return (
     <div className="flex shrink-0 flex-col gap-4">
       <div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-3">
-        <div className="min-w-0 max-md:-mx-4 max-md:overflow-x-auto max-md:scroll-px-4 max-md:px-4 max-md:pb-1 max-md:[-webkit-overflow-scrolling:touch]">
+        <div className="min-w-0 max-md:-mx-4 max-md:px-4">
           <AnnotationToolbar
             tool={activeTool}
             canDraw={page !== null}

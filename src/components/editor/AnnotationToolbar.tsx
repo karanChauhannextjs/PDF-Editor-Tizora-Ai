@@ -33,7 +33,7 @@ function AnnotationToolbar({
     <div
       className={cn(
         'flex items-center gap-2',
-        'max-md:flex-nowrap max-md:pe-4 max-md:[&>*]:shrink-0',
+        'max-md:flex-nowrap max-md:overflow-x-auto max-md:scroll-px-4 max-md:pe-4 max-md:pb-1 max-md:[-webkit-overflow-scrolling:touch] max-md:[&>*]:shrink-0',
         'md:flex-wrap',
       )}
       role="toolbar"
