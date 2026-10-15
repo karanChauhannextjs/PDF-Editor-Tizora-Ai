@@ -1,4 +1,4 @@
-import { useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import type { Annotation, AnnotationTool, Point } from '@/types/annotation'
 import type { PdfPageDimensions } from '@/types/pdf'
 import type { AnnotationAction } from '@/utils/annotationReducer'
@@ -70,8 +70,53 @@ export function AnnotationLayer({
   const dragRef = useRef<DragState | null>(null)
   const [preview, setPreview] = useState<ShapeDraft | null>(null)
   const [isTransforming, setIsTransforming] = useState(false)
+  const [isGesturing, setIsGesturing] = useState(false)
 
   const selected = annotations.find((annotation) => annotation.id === selectedId) ?? null
+
+  useEffect(() => {
+    if (!isGesturing) {
+      return
+    }
+
+    const scrollParents: HTMLElement[] = []
+    let node: HTMLElement | null = svgRef.current?.parentElement ?? null
+    while (node) {
+      const { overflowY } = getComputedStyle(node)
+      if (overflowY === 'auto' || overflowY === 'scroll') {
+        scrollParents.push(node)
+      }
+      node = node.parentElement
+    }
+
+    const previousOverflow = scrollParents.map((element) => element.style.overflow)
+    scrollParents.forEach((element) => {
+      element.style.overflow = 'hidden'
+    })
+
+    const blockTouchScroll = (event: TouchEvent) => {
+      event.preventDefault()
+    }
+    document.addEventListener('touchmove', blockTouchScroll, { passive: false })
+
+    return () => {
+      scrollParents.forEach((element, index) => {
+        element.style.overflow = previousOverflow[index]
+      })
+      document.removeEventListener('touchmove', blockTouchScroll)
+    }
+  }, [isGesturing])
+
+  const beginGesture = (event: PointerEvent) => {
+    if (event.pointerType === 'touch') {
+      event.preventDefault()
+    }
+    setIsGesturing(true)
+  }
+
+  const endGesture = () => {
+    setIsGesturing(false)
+  }
 
   const readPoint = (event: { clientX: number; clientY: number }) => {
     const svg = svgRef.current
@@ -101,6 +146,7 @@ export function AnnotationLayer({
       return
     }
 
+    beginGesture(event)
     capturePointer(event.currentTarget, event.pointerId)
     dragRef.current = {
       kind: 'draw',
@@ -125,6 +171,7 @@ export function AnnotationLayer({
     }
     dispatch({ type: 'select', id: annotation.id })
     onBeginHistoryTransaction()
+    beginGesture(event)
     capturePointer(svgRef.current, event.pointerId)
     dragRef.current = {
       kind: 'move',
@@ -148,6 +195,7 @@ export function AnnotationLayer({
     }
     event.stopPropagation()
     onBeginHistoryTransaction()
+    beginGesture(event)
     capturePointer(svgRef.current, event.pointerId)
     dispatch({ type: 'select', id: selected.id })
     if (handle === 'rotate') {
@@ -222,6 +270,7 @@ export function AnnotationLayer({
     const wasTransform = drag.kind === 'move' || drag.kind === 'resize' || drag.kind === 'rotate'
     dragRef.current = null
     setIsTransforming(false)
+    endGesture()
     releasePointer(event.currentTarget, event.pointerId)
     if (wasTransform) {
       onEndHistoryTransaction()
@@ -258,6 +307,7 @@ export function AnnotationLayer({
         : 'cursor-crosshair'
 
   const needsPreciseTouch =
+    isGesturing ||
     isTransforming ||
     tool === 'rectangle' ||
     tool === 'circle' ||
