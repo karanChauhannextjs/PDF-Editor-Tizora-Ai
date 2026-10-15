@@ -23,7 +23,7 @@ export function PdfEditorPendingDialog({
   return (
     <Dialog
       open={pending !== null}
-      onOpenChange={(open) => {
+      onOpenChange={(open: boolean) => {
         if (!open) {
           onClose()
         }

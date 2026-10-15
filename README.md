@@ -17,6 +17,8 @@ npm run test   # Vitest (unit + UI tests)
 
 Other scripts: `npm run build`, `npm run preview`, `npm run format`, `npm run format:check`.
 
+**More docs:** [Demo guide](./docs/DEMO-GUIDE.md) (walkthrough) · [Technical reference](./docs/TECHNICAL-REFERENCE.md) (architecture and Q&A).
+
 > **Note:** `README.md` is excluded from Prettier (see `.prettierignore`) so saving it does not reflow tables. Markdown format-on-save is off in `.vscode/settings.json` for this repo.
 
 ---
@@ -31,8 +33,10 @@ src/
   stores/              Zustand + IndexedDB session
   utils/               reducers, geometry, JSON, pdf-lib export
   types/               TypeScript models
+  styles/              Vendored shadcn Tailwind helpers (`shadcn-tailwind.css`)
   test/                Vitest tests
 public/                static assets (logo, PDF.js worker, favicon)
+docs/                  Demo and technical guides (markdown)
 ```
 
 ---
@@ -137,12 +141,13 @@ Rotate handle on shapes (not circles): `rotateAnnotation`, pivot from `getAnnota
 
 ## ESLint (`eslint.config.js`)
 
-- **Ignores:** `dist`, `node_modules`, `coverage`, `public`, `**/*.min.mjs`
-- **@eslint/js** recommended + **typescript-eslint** recommended
+- **ESLint 10** + **@eslint/js** + **typescript-eslint** (recommended + **type-checked** on `src/**/*.{ts,tsx}` via `projectService`)
+- **Strict typing rules:** `no-explicit-any`, `no-unsafe-*` (assignment, call, argument, member access, return)
 - **react-hooks** recommended, **react-refresh** (`only-export-components` warn; off for `ui/**` and `FileControls.tsx`)
 - **eslint-config-prettier** — no style conflicts with Prettier
+- **Ignores:** `dist`, `node_modules`, `coverage`, `public`, `**/*.min.mjs`, `eslint.config.js`, `vite.config.ts`
 
-Run: `npm run lint`
+Run: `npm run lint` (zero warnings)
 
 ---
 
@@ -163,7 +168,7 @@ Run: `npm run format` (does not touch `README.md`).
 | `PdfEditor.test.tsx` | Text tool, edit guard, toolbar undo, invalid PDF alert |
 | `annotationReducer.test.ts` | Add/delete, move shapes |
 | `annotationRootReducer.test.ts` | Per-page isolation |
-| `annotationHistory.test.ts` | Redo stroke color, snapshot immutability |
+| `annotationHistory.test.ts` | Redo stroke color, snapshot immutability, one undo per drag gesture |
 | `annotationGeometry.test.ts` | Rectangle drag, pointer mapping |
 | `annotationPersistence.test.ts` | JSON v1/v2, validation errors |
 | `pdfExport.test.ts` | Embedded annotations in PDF bytes |

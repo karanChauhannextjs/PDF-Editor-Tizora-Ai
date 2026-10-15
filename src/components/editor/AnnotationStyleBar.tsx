@@ -21,6 +21,15 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 
+/** Base UI select items use string values; parse safely for numeric stroke/font sizes. */
+function parseSelectNumber(value: string | null): number | null {
+  if (value === null) {
+    return null
+  }
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 type AnnotationStyleBarProps = {
   tool: AnnotationTool | null
   selected: Annotation | null
@@ -415,11 +424,12 @@ function StrokeWidthSelect({
         Border width
       </span>
       <Select
-        value={value}
+        value={String(value)}
         disabled={disabled}
-        onValueChange={(next) => {
-          if (next !== null) {
-            onChange(Number(next))
+        onValueChange={(next: string | null) => {
+          const parsed = parseSelectNumber(next)
+          if (parsed !== null) {
+            onChange(parsed)
           }
         }}
       >
@@ -434,7 +444,7 @@ function StrokeWidthSelect({
         </SelectTrigger>
         <SelectContent align="start">
           {widths.map((width) => (
-            <SelectItem key={width} value={width}>
+            <SelectItem key={width} value={String(width)}>
               {width} pt
             </SelectItem>
           ))}
@@ -465,11 +475,12 @@ function FontSizeSelect({
         Font size
       </span>
       <Select
-        value={value}
+        value={String(value)}
         disabled={disabled}
-        onValueChange={(next) => {
-          if (next !== null) {
-            onChange(Number(next))
+        onValueChange={(next: string | null) => {
+          const parsed = parseSelectNumber(next)
+          if (parsed !== null) {
+            onChange(parsed)
           }
         }}
       >
@@ -484,7 +495,7 @@ function FontSizeSelect({
         </SelectTrigger>
         <SelectContent align="start" className="max-h-60">
           {sizes.map((size) => (
-            <SelectItem key={size} value={size}>
+            <SelectItem key={size} value={String(size)}>
               {size} pt
             </SelectItem>
           ))}

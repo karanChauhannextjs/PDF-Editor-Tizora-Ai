@@ -24,7 +24,7 @@ function renderEditor() {
       toJSON() {
         return {}
       },
-    }) as DOMRect
+    })
 }
 
 describe('PdfEditor', () => {
