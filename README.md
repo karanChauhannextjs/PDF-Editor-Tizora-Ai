@@ -17,12 +17,6 @@ npm run test   # Vitest (unit + UI tests)
 
 Other scripts: `npm run build`, `npm run preview`, `npm run format`, `npm run format:check`.
 
-**More docs:** [Demo guide](./docs/DEMO-GUIDE.md) (walkthrough) · [Technical reference](./docs/TECHNICAL-REFERENCE.md) (architecture and Q&A).
-
-> **Note:** `README.md` is excluded from Prettier (see `.prettierignore`) so saving it does not reflow tables. Markdown format-on-save is off in `.vscode/settings.json` for this repo.
-
----
-
 ## Project layout
 
 ```
@@ -36,7 +30,6 @@ src/
   styles/              Vendored shadcn Tailwind helpers (`shadcn-tailwind.css`)
   test/                Vitest tests
 public/                static assets (logo, PDF.js worker, favicon)
-docs/                  Demo and technical guides (markdown)
 ```
 
 ---
@@ -185,6 +178,3 @@ Run: `npm run test`
 - **Client-only** — Large or encrypted PDFs limited by the browser.
 - **Download vs JSON** — Download is flat PDF; use JSON to edit again.
 
-## Branding
-
-Header and favicon use `public/pdf-editor-logo.png` (see `PdfEditorLogo.tsx` and `index.html`).
