@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Annotation } from '@/types/annotation'
+import type { PdfPageDimensions } from '@/types/pdf'
 import {
   annotationRootReducer,
   cloneAnnotationRootState,
@@ -9,6 +10,8 @@ import {
 } from '@/utils/annotationRootReducer'
 
 const PAGE_INDEX = 1
+
+const page: PdfPageDimensions = { width: 600, height: 800 }
 
 type HistoryState = {
   past: AnnotationRootState[]
@@ -98,7 +101,90 @@ function countOnPage(state: AnnotationRootState): number {
   return state.pages[PAGE_INDEX]?.annotations.length ?? 0
 }
 
+function xOf(state: AnnotationRootState, id: string): number | undefined {
+  const annotation = state.pages[PAGE_INDEX]?.annotations.find((entry) => entry.id === id)
+  if (!annotation || annotation.type !== 'rectangle') {
+    return undefined
+  }
+  return annotation.x
+}
+
+function applyDuringGesture(
+  history: HistoryState,
+  action: Parameters<typeof annotationRootReducer>[1],
+): HistoryState {
+  const nextPresent = annotationRootReducer(history.present, action)
+  if (rootStatesEqual(nextPresent, history.present)) {
+    return history
+  }
+  return { ...history, present: nextPresent }
+}
+
+function endGestureTransaction(history: HistoryState, snapshot: AnnotationRootState): HistoryState {
+  if (rootStatesEqual(snapshot, history.present)) {
+    return history
+  }
+  return {
+    past: [...history.past, cloneAnnotationRootState(snapshot)],
+    present: history.present,
+    future: [],
+  }
+}
+
 describe('annotation undo/redo history', () => {
+  it('records one undo step for a drag with many move updates', () => {
+    let history: HistoryState = {
+      past: [],
+      present: initialAnnotationRootState,
+      future: [],
+    }
+
+    history = applyAction(history, {
+      type: 'add',
+      pageIndex: PAGE_INDEX,
+      annotation: rectangle,
+    })
+    expect(xOf(history.present, rectangle.id)).toBe(10)
+
+    const dragStart = cloneAnnotationRootState(history.present)
+    history = applyDuringGesture(history, {
+      type: 'move',
+      pageIndex: PAGE_INDEX,
+      id: rectangle.id,
+      dx: 5,
+      dy: 0,
+      page,
+    })
+    history = applyDuringGesture(history, {
+      type: 'move',
+      pageIndex: PAGE_INDEX,
+      id: rectangle.id,
+      dx: 10,
+      dy: 3,
+      page,
+    })
+    history = applyDuringGesture(history, {
+      type: 'move',
+      pageIndex: PAGE_INDEX,
+      id: rectangle.id,
+      dx: 2,
+      dy: 1,
+      page,
+    })
+    expect(xOf(history.present, rectangle.id)).toBe(27)
+    expect(history.past).toHaveLength(1)
+
+    history = endGestureTransaction(history, dragStart)
+    expect(history.past).toHaveLength(2)
+    expect(xOf(history.past[1], rectangle.id)).toBe(10)
+
+    history = undo(history)
+    expect(xOf(history.present, rectangle.id)).toBe(10)
+
+    history = redo(history)
+    expect(xOf(history.present, rectangle.id)).toBe(27)
+  })
+
   it('restores stroke color on redo after undo', () => {
     let history: HistoryState = {
       past: [],

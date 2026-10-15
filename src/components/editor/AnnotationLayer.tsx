@@ -18,6 +18,13 @@ import { clientToPagePoint } from '@/utils/coordinates'
 import { AnnotationItem } from '@/components/editor/AnnotationItem'
 import { SelectionHandles } from '@/components/editor/SelectionHandles'
 
+/** Matches Tailwind `max-md` — scroll lock while dragging applies only on small screens. */
+const MOBILE_MAX_WIDTH_MEDIA = '(max-width: 767px)'
+
+function isMobileViewport(): boolean {
+  return window.matchMedia(MOBILE_MAX_WIDTH_MEDIA).matches
+}
+
 type AnnotationLayerProps = {
   page: PdfPageDimensions
   tool: AnnotationTool | null
@@ -27,7 +34,7 @@ type AnnotationLayerProps = {
   selectedId: string | null
   editingTextId: string | null
   hideSelectionChrome: boolean
-  dispatch: (action: AnnotationAction) => void
+  dispatch: (action: AnnotationAction, options?: { skipHistory?: boolean }) => void
   onTextRequest: (point: Point) => void
   onEditText: (annotation: Annotation) => void
   onBeginHistoryTransaction: () => void
@@ -75,7 +82,7 @@ export function AnnotationLayer({
   const selected = annotations.find((annotation) => annotation.id === selectedId) ?? null
 
   useEffect(() => {
-    if (!isGesturing) {
+    if (!isGesturing || !isMobileViewport()) {
       return
     }
 
@@ -169,8 +176,8 @@ export function AnnotationLayer({
     if (!point || !svgRef.current) {
       return
     }
-    dispatch({ type: 'select', id: annotation.id })
     onBeginHistoryTransaction()
+    dispatch({ type: 'select', id: annotation.id })
     beginGesture(event)
     capturePointer(svgRef.current, event.pointerId)
     dragRef.current = {
@@ -240,25 +247,31 @@ export function AnnotationLayer({
       if (dx === 0 && dy === 0) {
         return
       }
-      dispatch({ type: 'move', id: drag.id, dx, dy, page })
+      dispatch({ type: 'move', id: drag.id, dx, dy, page }, { skipHistory: true })
       dragRef.current = { ...drag, last: point }
       return
     }
     if (drag.kind === 'resize') {
       const next = resizeAnnotation(annotation, drag.handle, point, page)
-      dispatch({
-        type: 'updateAnnotation',
-        id: drag.id,
-        annotation: next,
-      })
+      dispatch(
+        {
+          type: 'updateAnnotation',
+          id: drag.id,
+          annotation: next,
+        },
+        { skipHistory: true },
+      )
       return
     }
     const next = rotateAnnotation(annotation, point, drag.startPointer, drag.startRotation, page)
-    dispatch({
-      type: 'updateAnnotation',
-      id: drag.id,
-      annotation: next,
-    })
+    dispatch(
+      {
+        type: 'updateAnnotation',
+        id: drag.id,
+        annotation: next,
+      },
+      { skipHistory: true },
+    )
   }
 
   const handlePointerUp = (event: PointerEvent<SVGSVGElement>) => {

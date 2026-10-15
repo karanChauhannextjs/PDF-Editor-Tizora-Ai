@@ -61,9 +61,10 @@ export function useAnnotations(currentPageIndex: number) {
 
   const beginHistoryTransaction = useCallback(() => {
     if (transactionStartRef.current === null) {
-      transactionStartRef.current = cloneAnnotationRootState(history.present)
+      const present = useEditorSessionStore.getState().annotationHistory.present
+      transactionStartRef.current = cloneAnnotationRootState(present)
     }
-  }, [history.present])
+  }, [])
 
   const endHistoryTransaction = useCallback(() => {
     const snapshot = transactionStartRef.current

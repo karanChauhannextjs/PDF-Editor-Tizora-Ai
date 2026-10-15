@@ -4,7 +4,9 @@ Browser-based PDF editor: open a PDF, draw shapes and text on each page, manage 
 
 ## Setup and run
 
-Requires **Node.js 20.19+** and npm.
+Requires **Node.js 20.19+** and npm (Vite 8 and several dev tools declare the same minimum). If `npm install` prints `EBADENGINE` and shows `v20.18.x`, upgrade Node (e.g. `nvm install` using `.nvmrc`, or install [Node 20.19+](https://nodejs.org/)).
+
+The UI uses copied shadcn components under `src/components/ui/`; theme helpers live in `src/styles/shadcn-tailwind.css` (vendored from shadcn). Add new primitives with `npx shadcn@latest add <component>` when needed.
 
 ```bash
 npm install

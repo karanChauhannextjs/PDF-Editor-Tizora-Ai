@@ -242,7 +242,7 @@ export function usePdfEditor({ initialPage }: PdfEditorOptions = {}) {
       return
     }
 
-    let serialized = ''
+    let serialized: string
     try {
       serialized = await file.text()
     } catch (error) {
