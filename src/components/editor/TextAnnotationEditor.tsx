@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import type { PdfPageDimensions } from '@/types/pdf'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -22,6 +22,36 @@ export function TextAnnotationEditor({
 }: TextAnnotationEditorProps) {
   const [value, setValue] = useState(initialText)
   const [error, setError] = useState<string | null>(null)
+  const formRef = useRef<HTMLFormElement>(null)
+  const [position, setPosition] = useState<{ left: string; top: string } | null>(null)
+
+  useLayoutEffect(() => {
+    const form = formRef.current
+    const parent = form?.offsetParent as HTMLElement | null
+    if (!form || !parent) {
+      return
+    }
+
+    const parentWidth = parent.clientWidth
+    const parentHeight = parent.clientHeight
+    if (parentWidth === 0 || parentHeight === 0) {
+      return
+    }
+
+    const formWidth = form.offsetWidth
+    const formHeight = form.offsetHeight
+
+    let leftPx = (x / page.width) * parentWidth
+    let topPx = (y / page.height) * parentHeight
+
+    leftPx = Math.min(Math.max(0, leftPx), Math.max(0, parentWidth - formWidth))
+    topPx = Math.min(Math.max(0, topPx), Math.max(0, parentHeight - formHeight))
+
+    setPosition({
+      left: `${(leftPx / parentWidth) * 100}%`,
+      top: `${(topPx / parentHeight) * 100}%`,
+    })
+  }, [x, y, page.width, page.height, value, error])
 
   const commit = () => {
     if (value.trim().length === 0) {
@@ -47,13 +77,18 @@ export function TextAnnotationEditor({
     }
   }
 
+  const placementStyle =
+    position ??
+    ({
+      left: `${(x / page.width) * 100}%`,
+      top: `${(y / page.height) * 100}%`,
+    } as const)
+
   return (
     <form
-      className="absolute z-20 w-56 max-w-[80%] rounded-lg border bg-popover p-2 shadow-md"
-      style={{
-        left: `${(x / page.width) * 100}%`,
-        top: `${(y / page.height) * 100}%`,
-      }}
+      ref={formRef}
+      className="absolute z-20 w-56 max-w-[min(14rem,85%)] rounded-lg border bg-popover p-2 shadow-md"
+      style={placementStyle}
       onSubmit={handleSubmit}
       onPointerDown={(event) => event.stopPropagation()}
     >

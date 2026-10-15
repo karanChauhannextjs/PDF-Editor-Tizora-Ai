@@ -46,7 +46,9 @@ export function PdfEditor({ initialPage }: PdfEditorProps) {
         onFileError={editor.setAppError}
       />
 
-      <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col overflow-hidden px-4 py-4">
+      <main
+        className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col overflow-hidden px-4 py-4 max-md:overflow-y-auto max-md:overscroll-y-contain max-md:[-webkit-overflow-scrolling:touch]"
+      >
         <PdfEditorChrome
           page={editor.page}
           activeTool={editor.activeTool}

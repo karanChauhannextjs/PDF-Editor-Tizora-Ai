@@ -18,6 +18,7 @@ import { useAnnotations } from '@/hooks/useAnnotations'
 import { usePdfDocument } from '@/hooks/usePdfDocument'
 import { useEditorSessionStore } from '@/stores/editorSessionStore'
 import { isTextAnnotation, scaleAnnotationsToPage } from '@/utils/annotationGeometry'
+import { clampAnnotationToPage } from '@/utils/annotationTransform'
 import {
   buildAnnotationDocumentFromRoot,
   downloadAnnotationDocument,
@@ -340,7 +341,7 @@ export function usePdfEditor({ initialPage }: PdfEditorOptions = {}) {
   }
 
   const handleCommitText = (text: string) => {
-    if (!textDraft) {
+    if (!textDraft || !page) {
       return
     }
     if (textDraft.mode === 'create') {
@@ -353,9 +354,19 @@ export function usePdfEditor({ initialPage }: PdfEditorOptions = {}) {
         ...textFormat,
         rotation: 0,
       }
-      dispatch({ type: 'add', annotation })
+      dispatch({
+        type: 'add',
+        annotation: clampAnnotationToPage(annotation, page) as TextAnnotation,
+      })
     } else {
-      dispatch({ type: 'updateText', id: textDraft.id, text })
+      const existing = annotations.find((item) => item.id === textDraft.id)
+      if (existing && isTextAnnotation(existing)) {
+        dispatch({
+          type: 'updateAnnotation',
+          id: textDraft.id,
+          annotation: clampAnnotationToPage({ ...existing, text }, page),
+        })
+      }
     }
     setTextDraft(null)
     setTool('select')

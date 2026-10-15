@@ -63,12 +63,14 @@ export function PdfEditorWorkspace({
 }: PdfEditorWorkspaceProps) {
   return (
     <section
-      className="mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-hidden md:min-h-0 md:flex-row"
+      className="mt-4 flex min-h-0 flex-1 flex-col gap-3 max-md:flex-none max-md:overflow-visible md:min-h-0 md:flex-row md:overflow-hidden"
     >
       <div
         className={cn(
-          'flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain rounded-xl border bg-muted/60 p-4 [-webkit-overflow-scrolling:touch]',
-          !page && 'max-md:overflow-visible',
+          'flex min-w-0 flex-col overflow-x-hidden rounded-xl border bg-muted/60 p-4',
+          page &&
+            'max-md:min-h-[76dvh] max-md:shrink-0 max-md:overflow-y-auto max-md:overscroll-contain max-md:[-webkit-overflow-scrolling:touch]',
+          'md:min-h-0 md:flex-1 md:overflow-y-auto md:overscroll-contain',
           !page && 'flex flex-col',
         )}
       >
