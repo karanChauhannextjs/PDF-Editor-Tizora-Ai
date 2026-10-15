@@ -4,7 +4,9 @@ Browser-based PDF editor: open a PDF, draw shapes and text on each page, manage 
 
 ## Setup and run
 
-Requires **Node.js 20.19+** and npm (Vite 8 and several dev tools declare the same minimum). If `npm install` prints `EBADENGINE` and shows `v20.18.x`, upgrade Node (e.g. `nvm install` using `.nvmrc`, or install [Node 20.19+](https://nodejs.org/)).
+Requires **Node.js 20.19+** and npm (Vite 8 uses **Rolldown**, which ships a native binary per OS). If `npm install` prints `EBADENGINE` and shows `v20.18.x`, upgrade Node (e.g. `nvm install` using `.nvmrc`, then `nvm use`, or install [Node 20.19+](https://nodejs.org/)). On older Node versions npm **skips** the `@rolldown/binding-*` optional packages, and `npm run dev` fails with `Cannot find native binding`.
+
+If you still see that error after upgrading Node: delete `node_modules` and `package-lock.json`, run `npm install` again (do not pass `--omit=optional`). The repo’s `postinstall` script re-installs the binding when npm omits it.
 
 The UI uses copied shadcn components under `src/components/ui/`; theme helpers live in `src/styles/shadcn-tailwind.css` (vendored from shadcn). Add new primitives with `npx shadcn@latest add <component>` when needed.
 
